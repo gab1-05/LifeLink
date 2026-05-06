@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Blood Requests — LifeLink{% endblock %}
+{% block page_title %}Blood Requests{% endblock %}
+
+{% block content %}
+<style>
+  .req-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px;transition:all 0.3s;position:relative;overflow:hidden;}
+  .req-card:hover{border-color:rgba(220,20,60,0.35);transform:translateY(-2px);}
+  .req-card.CRITICAL{border-left:3px solid var(--crimson);}
+  .req-card.URGENT{border-left:3px solid var(--gold);}
+  .req-card.NORMAL{border-left:3px solid var(--green);}
+  .req-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .req-blood{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;flex-shrink:0;}
+  .req-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;}
+  .req-sub{font-size:12px;color:var(--text-muted);margin-top:2px;}
+  .req-details{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;}
+  .req-detail{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);}
+  .req-detail i{width:14px;color:var(--crimson);font-size:12px;}
+  .req-actions{display:flex;gap:8px;}
+  .tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;}
+  .tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-muted);transition:all 0.2s;border:none;background:none;}
+  .tab.active{background:var(--crimson);color:#fff;box-shadow:0 2px 8px rgba(220,20,60,0.4);}
+  .req-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;}
+  .time-badge{position:absolute;top:16px;right:16px;font-size:10px;color:var(--text-muted);}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('all', this)">🩸 All Open</button>
+    <button class="tab" onclick="switchTab('mine', this)">👤 My Requests</button>
+    <button class="tab" onclick="switchTab('nearby', this)">📍 Nearby</button>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <select id="filter-urgency" class="input" style="width:150px;" onchange="loadRequests()">
+      <option value="">All urgency</option>
+      <option value="CRITICAL">🚨 Critical</option>
+      <option value="URGENT">⚡ Urgent</option>
+      <option value="NORMAL">✅ Normal</option>
+    </select>
+    <button class="btn btn-primary btn-sm" onclick="openModal('request-modal')">
+      <i class="fa fa-plus"></i> New Request
+    </button>
+  </div>
+</div>
+
+<div id="req-grid" class="req-grid">
+  <div style="grid-column:1/-1;text-align:center;padding:60px;"><div class="spinner" style="margin:0 auto;"></div></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let activeTab = 'all';
+
+  function switchTab(tab, btn) {
+    activeTab = tab;
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadRequests();
+  }
+
+  const BT_LABEL = {A_POSITIVE:'A+',A_NEGATIVE:'A-',B_POSITIVE:'B+',B_NEGATIVE:'B-',AB_POSITIVE:'AB+',AB_NEGATIVE:'AB-',O_POSITIVE:'O+',O_NEGATIVE:'O-'};
+  const BT_COLOR = {A_POSITIVE:'rgba(41,121,255,0.2)',A_NEGATIVE:'rgba(41,121,255,0.2)',B_POSITIVE:'rgba(170,0,255,0.2)',B_NEGATIVE:'rgba(170,0,255,0.2)',AB_POSITIVE:'rgba(255,183,0,0.2)',AB_NEGATIVE:'rgba(255,183,0,0.2)',O_POSITIVE:'rgba(220,20,60,0.2)',O_NEGATIVE:'rgba(220,20,60,0.2)'};
+
+  async function loadRequests() {
+    const grid = document.getElementById('req-grid');
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+
+    try {
+      let data;
+      if (activeTab === 'mine') {
+        data = await api('requests/my');
+      } else if (activeTab === 'nearby' && currentLat && currentLng) {
+        const bt = currentUser?.bloodType || '';
+        data = await api(`requests/nearby?lat=${currentLat}&lng=${currentLng}&radius=50&bloodType=${bt}`);
+      } else {
+        data = await api('requests');
+      }
+
+      const urgFilter = document.getElementById('filter-urgency').value;
+      if (urgFilter) data = data.filter(r => r.urgency === urgFilter);
+
+      if (!data.length) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fa fa-droplet"></i><h3>No requests found</h3><p>Try a different filter or post a new request.</p></div>';
+        return;
+      }
+
+      grid.innerHTML = data.map(r => renderRequestCard(r)).join('');
+    } catch {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fa fa-exclamation-circle"></i><h3>Error</h3><p>Could not load requests. Is the backend running?</p></div>';
+    }
+  }
+
+  function renderRequestCard(r) {
+    const isOwner = currentUser && r.patient && r.patient.id === currentUser.id;
+    const btLabel = BT_LABEL[r.bloodType] || r.bloodType || '?';
+    const btBg = BT_COLOR[r.bloodType] || 'rgba(136,136,136,0.15)';
+    const urgColors = {CRITICAL:'var(--crimson)',URGENT:'var(--gold)',NORMAL:'var(--green)'};
+    const uc = urgColors[r.urgency] || '#888';
+
+    return `
+    <div class="req-card ${r.urgency}" id="req-${r.id}">
+      <span class="time-badge">${timeAgo(r.createdAt)}</span>
+      <div class="req-top">
+        <div class="req-blood" style="background:${btBg};color:${uc};">${btLabel}</div>
+        <div>
+          <div class="req-title">${r.hospitalName || 'Unknown Hospital'}</div>
+          <div class="req-sub">${r.hospitalAddress || 'No address provided'}</div>
+        </div>
+        <span class="blood-badge urgency-${r.urgency}" style="margin-left:auto;">${r.urgency}</span>
+      </div>
+      <div class="req-details">
+        <div class="req-detail"><i class="fa fa-droplet"></i>${r.unitsNeeded || 1} unit(s) needed</div>
+        <div class="req-detail"><i class="fa fa-phone"></i>${r.contactPhone || 'No contact'}</div>
+        <div class="req-detail"><i class="fa fa-user"></i>${r.patient?.fullName || 'Anonymous'}</div>
+        <div class="req-detail"><i class="fa fa-circle"></i>${r.status || 'OPEN'}</div>
+      </div>
+      ${r.description ? `<div style="font-size:12px;color:var(--text-muted);padding:10px;background:var(--surface-2);border-radius:8px;margin-bottom:14px;">${r.description}</div>` : ''}
+      <div class="req-actions">
+        ${isOwner
+          ? `<button class="btn btn-secondary btn-sm" onclick="fulfillReq(${r.id})"><i class="fa fa-check"></i> Mark Fulfilled</button>
+             <button class="btn btn-ghost btn-sm" onclick="cancelReq(${r.id})" style="color:var(--text-muted);">Cancel</button>`
+          : r.status === 'OPEN'
+            ? `<button class="btn btn-primary btn-sm" onclick="respondReq(${r.id})"><i class="fa fa-hand-holding-heart"></i> I'll Donate</button>
+               <button class="btn btn-secondary btn-sm" onclick="msgPatient(${r.patient?.id}, '${r.patient?.fullName}')"><i class="fa fa-comment"></i> Message</button>`
+            : `<span style="font-size:12px;color:var(--text-muted);padding:8px;">Already matched</span>`
+        }
+        <button class="btn btn-ghost btn-sm" onclick="openOnMap(${r.latitude},${r.longitude})" title="View on map">
+          <i class="fa fa-map"></i>
+        </button>
+      </div>
+    </div>`;
+  }
+
+  async function respondReq(id) {
+    try {
+      const res = await api(`requests/${id}/respond`, 'PATCH');
+      toast('🩸 Response Sent!', res.message || 'You responded to this request!', 'success');
+      loadRequests();
+    } catch { toast('Error', 'Could not respond', 'error'); }
+  }
+
+  async function fulfillReq(id) {
+    try {
+      const res = await api(`requests/${id}/fulfill`, 'PATCH');
+      toast('✅ Fulfilled!', res.message, 'success');
+      loadRequests();
+    } catch { toast('Error', 'Could not mark as fulfilled', 'error'); }
+  }
+
+  async function cancelReq(id) {
+    if (!confirm('Are you sure you want to cancel this request?')) return;
+    toast('Request Cancelled', 'Your request has been cancelled.', 'warning');
+    loadRequests();
+  }
+
+  function msgPatient(id, name) {
+    if (!id) return toast('Error', 'Cannot message this user', 'error');
+    window.location = `/messages/?to=${id}&name=${encodeURIComponent(name)}`;
+  }
+
+  function openOnMap(lat, lng) {
+    if (!lat || !lng) return toast('No Location', 'This request has no location data.', 'warning');
+    window.location = '/map/';
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr), now = new Date();
+    const diff = Math.floor((now-d)/1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    return Math.floor(diff/86400) + 'd ago';
+  }
+
+  loadRequests();
+  setInterval(loadRequests, 20000);
+</script>
+{% endblock %}

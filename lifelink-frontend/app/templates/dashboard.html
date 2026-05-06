@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — LifeLink{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<style>
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:12px;transition:all 0.3s;position:relative;overflow:hidden;}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;}
+  .stat-card.red::before{background:linear-gradient(90deg,var(--crimson),transparent);}
+  .stat-card.green::before{background:linear-gradient(90deg,var(--green),transparent);}
+  .stat-card.gold::before{background:linear-gradient(90deg,var(--gold),transparent);}
+  .stat-card.blue::before{background:linear-gradient(90deg,var(--blue),transparent);}
+  .stat-card:hover{transform:translateY(-2px);border-color:rgba(220,20,60,0.3);}
+  .stat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .stat-icon.red{background:rgba(220,20,60,0.15);}
+  .stat-icon.green{background:rgba(0,230,118,0.12);}
+  .stat-icon.gold{background:rgba(255,183,0,0.12);}
+  .stat-icon.blue{background:rgba(41,121,255,0.12);}
+  .stat-num{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;}
+  .stat-num.red{color:var(--crimson-l);}
+  .stat-num.green{color:var(--green);}
+  .stat-num.gold{color:var(--gold);}
+  .stat-num.blue{color:#64B5F6;}
+  .stat-label{font-size:13px;color:var(--text-muted);font-weight:500;}
+  .request-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05);transition:background 0.2s;cursor:pointer;}
+  .request-row:last-child{border-bottom:none;}
+  .request-row:hover{background:rgba(255,255,255,0.02);border-radius:8px;padding-left:8px;}
+  .req-info{flex:1;}
+  .req-hospital{font-size:13px;font-weight:600;margin-bottom:3px;}
+  .req-meta{font-size:12px;color:var(--text-muted);}
+  .donor-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+  .donor-row:last-child{border-bottom:none;}
+  .d-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--crimson),#7B00FF);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0;}
+  .d-name{font-size:13px;font-weight:600;}
+  .d-meta{font-size:12px;color:var(--text-muted);}
+  .available-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+  .available-pill.yes{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.3);}
+  .available-pill.no{background:rgba(136,136,136,0.1);color:var(--text-muted);border:1px solid rgba(136,136,136,0.2);}
+  .dot{width:6px;height:6px;border-radius:50%;}
+  .dot.green{background:var(--green);box-shadow:0 0 4px var(--green);}
+  .dot.gray{background:var(--text-muted);}
+  .welcome-banner{background:linear-gradient(135deg,rgba(220,20,60,0.15),rgba(123,0,255,0.1));border:1px solid rgba(220,20,60,0.2);border-radius:var(--radius-lg);padding:28px 32px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+  .wb-left h2{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:6px;}
+  .wb-left p{font-size:14px;color:var(--text-muted);}
+  .wb-icon{font-size:60px;animation:heartbeat 1.4s ease-in-out infinite;}
+  @keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.15)}28%{transform:scale(1)}42%{transform:scale(1.1)}70%{transform:scale(1)}}
+</style>
+
+<!-- Welcome Banner -->
+<div class="welcome-banner">
+  <div class="wb-left">
+    <h2 id="welcome-title">Welcome back! 👋</h2>
+    <p id="welcome-sub">Loading your dashboard...</p>
+  </div>
+  <div class="wb-icon">🩸</div>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-4" style="margin-bottom:28px;" id="stats-grid">
+  <div class="stat-card red">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="stat-icon red">🩸</div>
+      <div><div class="stat-num red" id="st-donors">—</div><div class="stat-label">Total Donors</div></div>
+    </div>
+  </div>
+  <div class="stat-card green">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="stat-icon green">✅</div>
+      <div><div class="stat-num green" id="st-available">—</div><div class="stat-label">Available Now</div></div>
+    </div>
+  </div>
+  <div class="stat-card gold">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="stat-icon gold">⚡</div>
+      <div><div class="stat-num gold" id="st-open">—</div><div class="stat-label">Open Requests</div></div>
+    </div>
+  </div>
+  <div class="stat-card blue">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="stat-icon blue">❤️</div>
+      <div><div class="stat-num blue" id="st-fulfilled">—</div><div class="stat-label">Lives Saved</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:24px;">
+
+  <!-- Live Blood Requests -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">🆘 Live Blood Requests</span>
+      <a href="/requests/" class="btn btn-ghost btn-sm">View all <i class="fa fa-arrow-right"></i></a>
+    </div>
+    <div class="card-body" style="padding:0 24px;" id="live-requests">
+      <div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>
+    </div>
+  </div>
+
+  <!-- Nearby Donors -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">📍 Nearby Donors</span>
+      <a href="/donors/" class="btn btn-ghost btn-sm">All <i class="fa fa-arrow-right"></i></a>
+    </div>
+    <div class="card-body" style="padding:0 24px;" id="nearby-donors">
+      <div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- My Activity -->
+<div class="card" style="margin-top:24px;">
+  <div class="card-header">
+    <span class="card-title">📊 My Activity</span>
+  </div>
+  <div class="card-body">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;" id="my-activity">
+      <div style="text-align:center;padding:20px;background:var(--surface-2);border-radius:12px;">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--crimson-l);" id="my-donations">—</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">My Donations</div>
+      </div>
+      <div style="text-align:center;padding:20px;background:var(--surface-2);border-radius:12px;">
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--gold);" id="my-rating">—</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">My Rating</div>
+      </div>
+      <div style="text-align:center;padding:20px;background:var(--surface-2);border-radius:12px;">
+        <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--green);" id="my-next">—</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Next Eligible</div>
+      </div>
+      <div style="text-align:center;padding:20px;background:var(--surface-2);border-radius:12px;">
+        <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#CE93D8;" id="my-blood">—</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Blood Type</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Welcome message
+    if (currentUser) {
+      document.getElementById('welcome-title').textContent = `Welcome back, ${currentUser.fullName?.split(' ')[0]}! 👋`;
+      document.getElementById('welcome-sub').textContent = currentUser.isAvailable
+        ? '🟢 You are currently available as a donor.'
+        : '🔴 You are marked as unavailable. Toggle in the top bar to help someone.';
+      document.getElementById('my-donations').textContent = currentUser.totalDonations || 0;
+      document.getElementById('my-rating').textContent = currentUser.rating ? `${parseFloat(currentUser.rating).toFixed(1)} ⭐` : '—';
+      document.getElementById('my-blood').textContent = formatBloodType(currentUser.bloodType) || '?';
+    }
+
+    // Stats
+    try {
+      const stats = await api('requests/stats');
+      animNum('st-donors', stats.totalDonors || 0);
+      animNum('st-available', stats.availableDonors || 0);
+      animNum('st-open', stats.openRequests || 0);
+      animNum('st-fulfilled', stats.fulfilledRequests || 0);
+    } catch {}
+
+    // Live Requests
+    try {
+      const requests = await api('requests');
+      const el = document.getElementById('live-requests');
+      if (!requests.length) {
+        el.innerHTML = '<div class="empty-state"><i class="fa fa-check-circle"></i><h3>No open requests</h3><p>No urgent requests right now.</p></div>';
+      } else {
+        el.innerHTML = requests.slice(0,5).map(r => `
+          <div class="request-row" onclick="window.location='/requests/'">
+            <span class="blood-badge ${bloodTypeClass(r.bloodType)}">${formatBloodType(r.bloodType)}</span>
+            <div class="req-info">
+              <div class="req-hospital">${r.hospitalName || 'Unknown Hospital'}</div>
+              <div class="req-meta">${r.hospitalAddress || ''} · ${r.unitsNeeded || 1} unit(s)</div>
+            </div>
+            <span class="blood-badge urgency-${r.urgency}">${r.urgency}</span>
+          </div>
+        `).join('');
+      }
+    } catch {
+      document.getElementById('live-requests').innerHTML = '<div class="empty-state"><i class="fa fa-exclamation-circle"></i><h3>Error</h3><p>Could not load requests.</p></div>';
+    }
+
+    // Nearby Donors
+    try {
+      let url = 'users/donors';
+      if (currentLat && currentLng && currentUser?.bloodType) {
+        url += `?lat=${currentLat}&lng=${currentLng}&bloodType=${currentUser.bloodType}&radius=50`;
+      }
+      const donors = await api(url);
+      const el = document.getElementById('nearby-donors');
+      if (!donors.length) {
+        el.innerHTML = '<div class="empty-state"><i class="fa fa-user-slash"></i><h3>No donors found</h3><p>Try expanding the radius.</p></div>';
+      } else {
+        el.innerHTML = donors.slice(0,5).map(d => `
+          <div class="donor-row">
+            <div class="d-avatar">${(d.fullName||'?')[0].toUpperCase()}</div>
+            <div style="flex:1;">
+              <div class="d-name">${d.fullName}</div>
+              <div class="d-meta">${d.city || 'Unknown city'}</div>
+            </div>
+            <span class="blood-badge ${bloodTypeClass(d.bloodType)}">${formatBloodType(d.bloodType)}</span>
+            <div class="available-pill ${d.isAvailable ? 'yes' : 'no'}">
+              <div class="dot ${d.isAvailable ? 'green' : 'gray'}"></div>
+              ${d.isAvailable ? 'Available' : 'Busy'}
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch {
+      document.getElementById('nearby-donors').innerHTML = '<div class="empty-state"><i class="fa fa-exclamation-circle"></i><h3>Error</h3><p>Could not load donors.</p></div>';
+    }
+
+    // Next eligible date
+    if (currentUser?.nextEligibleDate) {
+      const d = new Date(currentUser.nextEligibleDate);
+      document.getElementById('my-next').textContent = d.toLocaleDateString();
+    } else {
+      document.getElementById('my-next').textContent = 'Ready!';
+    }
+  });
+
+  function animNum(id, target) {
+    const el = document.getElementById(id);
+    let current = 0;
+    const step = Math.max(1, Math.floor(target / 30));
+    const t = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = current.toLocaleString();
+      if (current >= target) clearInterval(t);
+    }, 40);
+  }
+</script>
+{% endblock %}

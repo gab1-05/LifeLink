@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block title %}My Profile — LifeLink{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<style>
+  .profile-hero {
+    background: linear-gradient(135deg, rgba(220,20,60,0.15), rgba(123,0,255,0.1));
+    border: 1px solid rgba(220,20,60,0.2); border-radius: var(--radius-lg);
+    padding: 36px; display: flex; align-items: center; gap: 28px;
+    margin-bottom: 28px; flex-wrap: wrap;
+  }
+  .profile-avatar-wrap { position: relative; flex-shrink: 0; }
+  .profile-avatar {
+    width: 96px; height: 96px; border-radius: 24px;
+    background: linear-gradient(135deg, var(--crimson), #7B00FF);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-size: 40px; font-weight: 800;
+    color: #fff; border: 3px solid rgba(220,20,60,0.4);
+  }
+  .profile-avail-badge {
+    position: absolute; bottom: -4px; right: -4px;
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    border: 2px solid var(--surface);
+  }
+  .profile-avail-badge.yes { background: var(--green); color: #000; }
+  .profile-avail-badge.no  { background: var(--text-muted); color: #000; }
+  .profile-info { flex: 1; }
+  .profile-name { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; margin-bottom: 6px; }
+  .profile-meta { font-size: 14px; color: var(--text-muted); display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .profile-meta span { display: flex; align-items: center; gap: 5px; }
+  .profile-stats { display: flex; gap: 24px; flex-wrap: wrap; }
+  .ps { text-align: center; padding: 12px 20px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid var(--border); }
+  .ps-val { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: var(--crimson-l); }
+  .ps-lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .edit-section { display: flex; flex-direction: column; gap: 20px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:640px){ .form-row{ grid-template-columns:1fr; } .profile-hero{ flex-direction:column; } }
+  .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; }
+  .section-card h3 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .history-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .history-item:last-child { border-bottom: none; }
+  .hi-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(220,20,60,0.12); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .eligibility-bar { height: 8px; border-radius: 4px; background: var(--surface-2); margin-top: 8px; overflow: hidden; }
+  .eligibility-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--crimson), var(--green)); transition: width 1s ease; }
+</style>
+
+<!-- Profile Hero -->
+<div class="profile-hero">
+  <div class="profile-avatar-wrap">
+    <div class="profile-avatar" id="p-avatar">?</div>
+    <div class="profile-avail-badge yes" id="p-avail-badge">✓ Available</div>
+  </div>
+  <div class="profile-info">
+    <div class="profile-name" id="p-name">Loading...</div>
+    <div class="profile-meta">
+      <span><i class="fa fa-envelope" style="color:var(--crimson);"></i><span id="p-email">—</span></span>
+      <span><i class="fa fa-phone" style="color:var(--crimson);"></i><span id="p-phone">—</span></span>
+      <span><i class="fa fa-location-dot" style="color:var(--crimson);"></i><span id="p-city">—</span></span>
+      <span><i class="fa fa-tag" style="color:var(--crimson);"></i><span id="p-role">—</span></span>
+    </div>
+    <div class="profile-stats">
+      <div class="ps"><div class="ps-val" id="p-donations">0</div><div class="ps-lbl">Donations</div></div>
+      <div class="ps"><div class="ps-val" id="p-rating" style="color:var(--gold);">—</div><div class="ps-lbl">Rating</div></div>
+      <div class="ps"><div class="ps-val" id="p-blood" style="color:#CE93D8;">?</div><div class="ps-lbl">Blood Type</div></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:8px;align-self:flex-start;">
+    <button class="btn btn-primary btn-sm" onclick="saveProfile()"><i class="fa fa-save"></i> Save Changes</button>
+    <button class="btn btn-secondary btn-sm" id="avail-btn" onclick="toggleAvail()"><i class="fa fa-toggle-on"></i> Toggle Availability</button>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1.3fr 1fr;gap:24px;">
+
+  <!-- Edit Form -->
+  <div class="section-card">
+    <h3>✏️ Edit Profile</h3>
+    <div class="edit-section">
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label">Full Name</label>
+          <input type="text" class="input" id="edit-name" placeholder="Your full name"/>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Phone</label>
+          <input type="tel" class="input" id="edit-phone" placeholder="+91 9999999999"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label">City</label>
+          <input type="text" class="input" id="edit-city" placeholder="e.g. Mumbai"/>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Blood Type</label>
+          <select class="input" id="edit-blood">
+            <option value="">Select</option>
+            <option value="A_POSITIVE">A+</option><option value="A_NEGATIVE">A-</option>
+            <option value="B_POSITIVE">B+</option><option value="B_NEGATIVE">B-</option>
+            <option value="AB_POSITIVE">AB+</option><option value="AB_NEGATIVE">AB-</option>
+            <option value="O_POSITIVE">O+</option><option value="O_NEGATIVE">O-</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Bio</label>
+        <textarea class="input" id="edit-bio" rows="3" style="resize:vertical;" placeholder="Tell donors or patients about yourself..."></textarea>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Location</label>
+        <button class="btn btn-secondary btn-sm" onclick="updateLocation()" style="width:fit-content;">
+          <i class="fa fa-location-crosshairs"></i> Use My Current Location
+        </button>
+        <span id="loc-info" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar info -->
+  <div style="display:flex;flex-direction:column;gap:24px;">
+
+    <!-- Donation Eligibility -->
+    <div class="section-card">
+      <h3>🩸 Donation Eligibility</h3>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+        Donors must wait 90 days between donations.
+      </div>
+      <div id="eligibility-info">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;">
+          <span>Progress to next donation</span>
+          <span id="elig-pct" style="color:var(--green);font-weight:600;">—</span>
+        </div>
+        <div class="eligibility-bar">
+          <div class="eligibility-fill" id="elig-bar" style="width:0%"></div>
+        </div>
+        <div style="margin-top:12px;font-size:13px;">
+          Last donation: <strong id="last-donation">Never</strong><br/>
+          Next eligible: <strong id="next-eligible" style="color:var(--green);">Ready now!</strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- Blood Compatibility -->
+    <div class="section-card">
+      <h3>🔬 Blood Compatibility</h3>
+      <div id="compatibility-info" style="font-size:13px;color:var(--text-muted);">
+        Update your blood type to see compatibility info.
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="section-card">
+      <h3>📋 Recent Activity</h3>
+      <div id="recent-activity">
+        <div style="text-align:center;padding:30px;"><div class="spinner" style="margin:0 auto;"></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const BT_LABEL = {A_POSITIVE:'A+',A_NEGATIVE:'A-',B_POSITIVE:'B+',B_NEGATIVE:'B-',AB_POSITIVE:'AB+',AB_NEGATIVE:'AB-',O_POSITIVE:'O+',O_NEGATIVE:'O-'};
+
+  const COMPATIBILITY = {
+    O_NEGATIVE:  { donate:'Everyone (Universal Donor)', receive:'O-' },
+    O_POSITIVE:  { donate:'O+, A+, B+, AB+', receive:'O+, O-' },
+    A_NEGATIVE:  { donate:'A+, A-, AB+, AB-', receive:'A-, O-' },
+    A_POSITIVE:  { donate:'A+, AB+', receive:'A+, A-, O+, O-' },
+    B_NEGATIVE:  { donate:'B+, B-, AB+, AB-', receive:'B-, O-' },
+    B_POSITIVE:  { donate:'B+, AB+', receive:'B+, B-, O+, O-' },
+    AB_NEGATIVE: { donate:'AB+, AB-', receive:'A-, B-, AB-, O-' },
+    AB_POSITIVE: { donate:'AB+ only', receive:'Everyone (Universal Receiver)' },
+  };
+
+  async function loadProfile() {
+    try {
+      const user = await api('users/me');
+
+      // Header
+      document.getElementById('p-avatar').textContent = (user.fullName||'?')[0].toUpperCase();
+      document.getElementById('p-name').textContent = user.fullName || 'Unknown';
+      document.getElementById('p-email').textContent = user.email || '—';
+      document.getElementById('p-phone').textContent = user.phone || 'Not set';
+      document.getElementById('p-city').textContent = user.city || 'Not set';
+      document.getElementById('p-role').textContent = user.role || 'DONOR';
+      document.getElementById('p-donations').textContent = user.totalDonations || 0;
+      document.getElementById('p-rating').textContent = user.rating ? `${parseFloat(user.rating).toFixed(1)} ⭐` : '—';
+      document.getElementById('p-blood').textContent = BT_LABEL[user.bloodType] || '?';
+
+      const badge = document.getElementById('p-avail-badge');
+      badge.textContent = user.isAvailable ? '✓ Available' : '✗ Unavailable';
+      badge.className = `profile-avail-badge ${user.isAvailable ? 'yes' : 'no'}`;
+
+      // Form prefill
+      document.getElementById('edit-name').value = user.fullName || '';
+      document.getElementById('edit-phone').value = user.phone || '';
+      document.getElementById('edit-city').value = user.city || '';
+      document.getElementById('edit-bio').value = user.bio || '';
+      if (user.bloodType) document.getElementById('edit-blood').value = user.bloodType;
+
+      // Eligibility
+      if (user.lastDonationDate) {
+        const last = new Date(user.lastDonationDate);
+        const next = new Date(last.getTime() + 90*24*60*60*1000);
+        const now = new Date();
+        const elapsed = Math.max(0, now - last);
+        const total = 90*24*60*60*1000;
+        const pct = Math.min(100, Math.round(elapsed / total * 100));
+        document.getElementById('elig-pct').textContent = pct + '%';
+        document.getElementById('elig-bar').style.width = pct + '%';
+        document.getElementById('last-donation').textContent = last.toLocaleDateString();
+        document.getElementById('next-eligible').textContent = now >= next ? 'Ready now! 🎉' : next.toLocaleDateString();
+      }
+
+      // Compatibility
+      if (user.bloodType && COMPATIBILITY[user.bloodType]) {
+        const c = COMPATIBILITY[user.bloodType];
+        document.getElementById('compatibility-info').innerHTML = `
+          <div style="margin-bottom:10px;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">CAN DONATE TO</div>
+            <div style="font-size:13px;color:var(--green);font-weight:600;">${c.donate}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">CAN RECEIVE FROM</div>
+            <div style="font-size:13px;color:var(--gold);font-weight:600;">${c.receive}</div>
+          </div>
+        `;
+      }
+
+      // Recent activity (my requests)
+      const requests = await api('requests/my');
+      const actEl = document.getElementById('recent-activity');
+      if (!requests.length) {
+        actEl.innerHTML = '<div class="empty-state" style="padding:20px 0;"><i class="fa fa-inbox"></i><h3 style="font-size:14px;">No activity yet</h3></div>';
+      } else {
+        actEl.innerHTML = requests.slice(0,4).map(r => `
+          <div class="history-item">
+            <div class="hi-icon">🩸</div>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;">${r.hospitalName || 'Request'}</div>
+              <div style="font-size:11px;color:var(--text-muted);">${BT_LABEL[r.bloodType]||'?'} · ${r.status}</div>
+            </div>
+            <span class="blood-badge urgency-${r.urgency}" style="font-size:10px;">${r.urgency}</span>
+          </div>
+        `).join('');
+      }
+
+    } catch (err) {
+      console.error('Profile load error:', err);
+      toast('Error', 'Could not load profile. Is the backend running?', 'error');
+    }
+  }
+
+  async function saveProfile() {
+    const updates = {
+      fullName: document.getElementById('edit-name').value,
+      phone:    document.getElementById('edit-phone').value,
+      city:     document.getElementById('edit-city').value,
+      bio:      document.getElementById('edit-bio').value,
+    };
+    const bt = document.getElementById('edit-blood').value;
+    if (bt) updates.bloodType = bt;
+    if (currentLat)  updates.latitude  = currentLat;
+    if (currentLng)  updates.longitude = currentLng;
+
+    try {
+      await api('users/me', 'PUT', updates);
+      toast('✅ Saved!', 'Your profile has been updated.', 'success');
+      loadProfile();
+    } catch { toast('Error', 'Could not save profile.', 'error'); }
+  }
+
+  async function toggleAvail() {
+    try {
+      const res = await api('users/toggle-availability', 'PATCH');
+      toast('Availability Updated', res.isAvailable ? '🟢 You are now available' : '🔴 You are now unavailable', res.isAvailable ? 'success' : 'warning');
+      loadProfile();
+    } catch { toast('Error', 'Could not update availability.', 'error'); }
+  }
+
+  function updateLocation() {
+    if (!navigator.geolocation) return toast('Error', 'Geolocation not supported', 'error');
+    navigator.geolocation.getCurrentPosition(pos => {
+      currentLat = pos.coords.latitude;
+      currentLng = pos.coords.longitude;
+      document.getElementById('loc-info').textContent = `📍 Location set: ${currentLat.toFixed(4)}, ${currentLng.toFixed(4)}`;
+      toast('Location Updated', 'Your location will be saved on next profile update.', 'success');
+    }, () => toast('Error', 'Could not get location. Check browser permissions.', 'error'));
+  }
+
+  loadProfile();
+</script>
+{% endblock %}

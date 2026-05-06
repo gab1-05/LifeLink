@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LifeLink — Sign In</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root{--crimson:#DC143C;--crimson-l:#FF3358;--bg:#0D0D0D;--surface:#141414;--surface-2:#1E1E1E;--border:rgba(220,20,60,0.18);--text:#F5F5F5;--text-muted:#888;--green:#00E676;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;position:relative;overflow:hidden;}
+    .bg-orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;}
+    .orb1{width:500px;height:500px;background:var(--crimson);opacity:0.08;top:-150px;left:-100px;}
+    .orb2{width:300px;height:300px;background:#7B00FF;opacity:0.07;bottom:50px;right:-50px;}
+    .auth-container{width:100%;max-width:440px;position:relative;z-index:1;}
+    .auth-logo{text-align:center;margin-bottom:36px;}
+    .logo-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--crimson),var(--crimson-l));display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px;box-shadow:0 8px 24px rgba(220,20,60,0.4);animation:heartbeat 1.4s ease-in-out infinite;}
+    @keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.15)}28%{transform:scale(1)}42%{transform:scale(1.1)}70%{transform:scale(1)}}
+    .logo-name{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;}.logo-name span{color:var(--crimson);}
+    .logo-sub{font-size:14px;color:var(--text-muted);margin-top:4px;}
+    .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px;box-shadow:0 16px 48px rgba(0,0,0,0.5);}
+    .auth-card h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:6px;}
+    .auth-card .sub{font-size:14px;color:var(--text-muted);margin-bottom:28px;}
+    .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:18px;}
+    label{font-size:13px;font-weight:500;color:var(--text-muted);}
+    .input-wrap{position:relative;}
+    .input-wrap i{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:14px;pointer-events:none;}
+    input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px 12px 40px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;}
+    input:focus{border-color:var(--crimson);box-shadow:0 0 0 3px rgba(220,20,60,0.1);}
+    input::placeholder{color:var(--text-muted);}
+    .btn-submit{width:100%;padding:14px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--crimson),var(--crimson-l));color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;}
+    .btn-submit:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(220,20,60,0.5);}
+    .btn-submit:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+    .divider{text-align:center;color:var(--text-muted);font-size:13px;margin:20px 0;position:relative;}
+    .divider::before,.divider::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--border);}
+    .divider::before{left:0;}.divider::after{right:0;}
+    .auth-switch{text-align:center;font-size:14px;color:var(--text-muted);margin-top:20px;}
+    .auth-switch a{color:var(--crimson-l);text-decoration:none;font-weight:600;}
+    .auth-switch a:hover{text-decoration:underline;}
+    .error-msg{background:rgba(220,20,60,0.12);border:1px solid rgba(220,20,60,0.3);border-radius:8px;padding:12px;font-size:13px;color:#FF5370;margin-bottom:16px;display:none;}
+    .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .forgot{float:right;font-size:12px;color:var(--text-muted);cursor:pointer;}
+    .forgot:hover{color:var(--crimson-l);}
+  </style>
+</head>
+<body>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+
+<div class="auth-container">
+  <div class="auth-logo">
+    <div class="logo-icon">🩸</div>
+    <div class="logo-name">Life<span>Link</span></div>
+    <div class="logo-sub">Every second counts.</div>
+  </div>
+
+  <div class="auth-card">
+    <h2>Welcome back</h2>
+    <p class="sub">Sign in to your LifeLink account</p>
+
+    <div class="error-msg" id="err-msg"></div>
+
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>Email Address</label>
+        <div class="input-wrap">
+          <i class="fa fa-envelope"></i>
+          <input type="email" id="email" placeholder="you@example.com" required autocomplete="email"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Password <span class="forgot" onclick="toast()">Forgot?</span></label>
+        <div class="input-wrap">
+          <i class="fa fa-lock"></i>
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password"/>
+        </div>
+      </div>
+      <button type="submit" class="btn-submit" id="login-btn">
+        <i class="fa fa-arrow-right-to-bracket"></i> Sign In
+      </button>
+    </form>
+
+    <div class="divider">or</div>
+
+    <div class="auth-switch">
+      Don't have an account? <a href="/register/">Create one — it's free</a>
+    </div>
+    <div class="auth-switch" style="margin-top:10px;">
+      <a href="/" style="color:var(--text-muted);font-weight:400;"><i class="fa fa-arrow-left"></i> Back to home</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    const err = document.getElementById('err-msg');
+    err.style.display = 'none';
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Signing in...';
+
+    try {
+      const res = await fetch('/api/auth/login/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: document.getElementById('email').value,
+          password: document.getElementById('password').value
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        window.location.href = '/dashboard/';
+      } else {
+        err.textContent = data.error || 'Login failed. Please check your credentials.';
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-arrow-right-to-bracket"></i> Sign In';
+      }
+    } catch {
+      err.textContent = 'Cannot connect to server. Make sure backend is running.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-arrow-right-to-bracket"></i> Sign In';
+    }
+  }
+</script>
+</body>
+</html>

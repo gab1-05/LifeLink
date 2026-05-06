@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}LifeLink — Real-Time Blood Donor Network{% endblock %}</title>
+  {% load static %}
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    :root {
+      --crimson:     #DC143C;
+      --crimson-d:   #A50E2D;
+      --crimson-l:   #FF3358;
+      --blood-dark:  #1A0008;
+      --bg:          #0D0D0D;
+      --surface:     #141414;
+      --surface-2:   #1E1E1E;
+      --surface-3:   #272727;
+      --border:      rgba(220,20,60,0.18);
+      --text:        #F5F5F5;
+      --text-muted:  #888;
+      --gold:        #FFB700;
+      --green:       #00E676;
+      --blue:        #2979FF;
+      --purple:      #AA00FF;
+      --radius:      14px;
+      --radius-lg:   22px;
+      --shadow:      0 8px 32px rgba(0,0,0,0.5);
+      --glow:        0 0 30px rgba(220,20,60,0.25);
+      --transition:  0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--crimson); border-radius: 3px; }
+
+    /* ── SIDEBAR NAV ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0;
+      width: 240px; height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      z-index: 1000; padding: 0;
+      transition: transform var(--transition);
+    }
+
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 12px;
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--crimson), var(--crimson-l));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      box-shadow: var(--glow);
+    }
+
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px; font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text span { color: var(--crimson); }
+
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+
+    .nav-section-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+      color: var(--text-muted); text-transform: uppercase;
+      padding: 8px 10px 6px; margin-top: 8px;
+    }
+
+    .nav-link {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: 10px;
+      color: var(--text-muted); text-decoration: none;
+      font-size: 14px; font-weight: 500;
+      transition: all var(--transition); margin-bottom: 2px;
+      position: relative;
+    }
+
+    .nav-link:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .nav-link.active {
+      background: rgba(220,20,60,0.15);
+      color: var(--crimson-l);
+      border: 1px solid var(--border);
+    }
+
+    .nav-link .nav-icon { width: 20px; text-align: center; font-size: 15px; }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--crimson);
+      color: #fff; font-size: 10px; font-weight: 700;
+      border-radius: 10px; padding: 2px 6px;
+      min-width: 18px; text-align: center;
+      display: none;
+    }
+
+    .nav-badge.show { display: block; }
+
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .user-pill {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px;
+      background: var(--surface-2); cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    .user-pill:hover { background: var(--surface-3); }
+
+    .user-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--crimson), var(--purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+
+    .user-info { flex: 1; overflow: hidden; }
+    .user-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: 11px; color: var(--text-muted); }
+
+    .availability-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      flex-shrink: 0;
+    }
+
+    .availability-dot.offline { background: var(--text-muted); box-shadow: none; }
+
+    /* ── MAIN CONTENT ── */
+    .main-content {
+      margin-left: 240px;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .topbar-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px; font-weight: 700;
+    }
+
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+
+    .icon-btn {
+      width: 38px; height: 38px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 15px;
+      transition: all var(--transition); position: relative;
+    }
+
+    .icon-btn:hover { background: var(--surface-3); color: var(--text); }
+
+    .icon-btn .badge {
+      position: absolute; top: -4px; right: -4px;
+      background: var(--crimson); color: #fff;
+      font-size: 9px; font-weight: 700;
+      border-radius: 8px; padding: 1px 4px;
+      min-width: 16px; text-align: center;
+    }
+
+    /* ── PAGE CONTENT ── */
+    .page-content { flex: 1; padding: 28px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px; font-weight: 700;
+    }
+
+    .card-body { padding: 24px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 600;
+      border: none; cursor: pointer;
+      transition: all var(--transition);
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--crimson), var(--crimson-l));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(220,20,60,0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(220,20,60,0.5);
+    }
+
+    .btn-secondary {
+      background: var(--surface-2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover { background: var(--surface-3); }
+
+    .btn-ghost {
+      background: transparent; color: var(--text-muted);
+    }
+
+    .btn-ghost:hover { color: var(--text); background: var(--surface-2); }
+
+    .btn-success {
+      background: linear-gradient(135deg, #00C853, var(--green));
+      color: #000; font-weight: 700;
+    }
+
+    .btn-sm { padding: 7px 14px; font-size: 13px; }
+    .btn-lg { padding: 14px 28px; font-size: 16px; }
+
+    /* ── BLOOD TYPE BADGES ── */
+    .blood-badge {
+      display: inline-flex; align-items: center;
+      padding: 4px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .blood-O { background: rgba(220,20,60,0.2); color: #FF5370; border: 1px solid rgba(220,20,60,0.4); }
+    .blood-A { background: rgba(41,121,255,0.2); color: #64B5F6; border: 1px solid rgba(41,121,255,0.4); }
+    .blood-B { background: rgba(170,0,255,0.2); color: #CE93D8; border: 1px solid rgba(170,0,255,0.4); }
+    .blood-AB { background: rgba(255,183,0,0.2); color: #FFD54F; border: 1px solid rgba(255,183,0,0.4); }
+
+    /* ── URGENCY BADGES ── */
+    .urgency-CRITICAL { background: rgba(220,20,60,0.2); color: var(--crimson-l); border: 1px solid var(--crimson); animation: urgency-pulse 1.5s infinite; }
+    .urgency-URGENT   { background: rgba(255,183,0,0.15); color: var(--gold); border: 1px solid rgba(255,183,0,0.4); }
+    .urgency-NORMAL   { background: rgba(0,230,118,0.1); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+
+    @keyframes urgency-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(220,20,60,0.4); }
+      50% { box-shadow: 0 0 0 5px rgba(220,20,60,0); }
+    }
+
+    /* ── INPUTS ── */
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-label { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+
+    .input {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 11px 14px;
+      color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 14px; width: 100%;
+      transition: border-color var(--transition);
+      outline: none;
+    }
+
+    .input:focus { border-color: var(--crimson); box-shadow: 0 0 0 3px rgba(220,20,60,0.12); }
+    .input::placeholder { color: var(--text-muted); }
+
+    select.input option { background: var(--surface-2); }
+
+    /* ── TOAST NOTIFICATIONS ── */
+    #toast-container {
+      position: fixed; top: 20px; right: 20px;
+      z-index: 9999; display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .toast {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 18px; border-radius: 12px;
+      min-width: 300px; max-width: 380px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      animation: toast-in 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    @keyframes toast-in {
+      from { transform: translateX(120%); opacity: 0; }
+      to   { transform: translateX(0);   opacity: 1; }
+    }
+
+    @keyframes toast-out {
+      from { transform: translateX(0);   opacity: 1; }
+      to   { transform: translateX(120%); opacity: 0; }
+    }
+
+    .toast-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .toast-body { flex: 1; }
+    .toast-title { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+    .toast-msg { font-size: 12px; color: var(--text-muted); }
+
+    .toast-success { border-left: 3px solid var(--green); }
+    .toast-error   { border-left: 3px solid var(--crimson); }
+    .toast-warning { border-left: 3px solid var(--gold); }
+    .toast-info    { border-left: 3px solid var(--blue); }
+
+    /* ── LOADING SPINNER ── */
+    .spinner {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 3px solid var(--border);
+      border-top-color: var(--crimson);
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: var(--text-muted);
+    }
+
+    .empty-state i { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+    .empty-state h3 { font-family: 'Syne', sans-serif; font-size: 18px; color: var(--text); margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; }
+
+    /* ── RESPONSIVE ── */
+    .hamburger {
+      display: none; width: 38px; height: 38px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 10px; cursor: pointer;
+      align-items: center; justify-content: center;
+      color: var(--text); font-size: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; }
+      .hamburger { display: flex; }
+      .page-content { padding: 16px; }
+    }
+
+    /* ── GRID UTILS ── */
+    .grid { display: grid; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+    @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 900px)  { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+
+    /* ── OVERLAY ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      z-index: 900; display: none;
+    }
+
+    .overlay.show { display: block; }
+
+    /* ── MODAL ── */
+    .modal {
+      position: fixed; inset: 0;
+      z-index: 2000; display: none;
+      align-items: center; justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.show { display: flex; }
+
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 100%; max-width: 520px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: var(--shadow);
+      animation: modal-in 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    @keyframes modal-in {
+      from { transform: scale(0.92) translateY(20px); opacity: 0; }
+      to   { transform: scale(1) translateY(0);       opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+    .modal-body { padding: 24px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    .close-btn {
+      background: none; border: none; color: var(--text-muted);
+      font-size: 18px; cursor: pointer; padding: 4px;
+      transition: color var(--transition);
+    }
+
+    .close-btn:hover { color: var(--text); }
+
+    /* ── PULSE ANIMATION ── */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+
+    /* ── HEARTBEAT ── */
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      14% { transform: scale(1.15); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.1); }
+      70% { transform: scale(1); }
+    }
+
+    .heartbeat { animation: heartbeat 1.4s ease-in-out infinite; }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% block body %}
+
+{% if request.path != '/' and not '/login' in request.path and not '/register' in request.path %}
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon heartbeat">🩸</div>
+    <div class="logo-text">Life<span>Link</span></div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="/dashboard/" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}">
+      <span class="nav-icon"><i class="fa fa-chart-pie"></i></span> Dashboard
+    </a>
+    <a href="/map/" class="nav-link {% if request.path == '/map/' %}active{% endif %}">
+      <span class="nav-icon"><i class="fa fa-map-location-dot"></i></span> Live Map
+    </a>
+    <a href="/requests/" class="nav-link {% if request.path == '/requests/' %}active{% endif %}">
+      <span class="nav-icon"><i class="fa fa-droplet"></i></span> Blood Requests
+      <span class="nav-badge" id="req-badge">0</span>
+    </a>
+    <a href="/donors/" class="nav-link {% if request.path == '/donors/' %}active{% endif %}">
+      <span class="nav-icon"><i class="fa fa-users"></i></span> Find Donors
+    </a>
+
+    <div class="nav-section-label">Personal</div>
+    <a href="/messages/" class="nav-link {% if request.path == '/messages/' %}active{% endif %}">
+      <span class="nav-icon"><i class="fa fa-comment-dots"></i></span> Messages
+      <span class="nav-badge" id="msg-badge">0</span>
+    </a>
+    <a href="/profile/" class="nav-link {% if request.path == '/profile/' %}active{% endif %}">
+      <span class="nav-icon"><i class="fa fa-user"></i></span> Profile
+    </a>
+
+    <div class="nav-section-label">Account</div>
+    <a href="/logout/" class="nav-link">
+      <span class="nav-icon"><i class="fa fa-right-from-bracket"></i></span> Logout
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-pill" onclick="window.location='/profile/'">
+      <div class="user-avatar" id="sb-avatar">?</div>
+      <div class="user-info">
+        <div class="user-name" id="sb-name">Loading...</div>
+        <div class="user-role" id="sb-role">—</div>
+      </div>
+      <div class="availability-dot" id="sb-dot"></div>
+    </div>
+  </div>
+</aside>
+
+<!-- Sidebar overlay for mobile -->
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- Main -->
+<div class="main-content">
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+        <i class="fa fa-bars"></i>
+      </button>
+      <span class="topbar-title">{% block page_title %}LifeLink{% endblock %}</span>
+    </div>
+    <div class="topbar-actions">
+      <!-- Emergency Request Button -->
+      <button class="btn btn-primary btn-sm" onclick="openModal('request-modal')">
+        <i class="fa fa-plus"></i> Request Blood
+      </button>
+
+      <!-- Notifications -->
+      <div class="icon-btn" onclick="openNotifPanel()" id="notif-btn">
+        <i class="fa fa-bell"></i>
+        <span class="badge" id="notif-badge" style="display:none">0</span>
+      </div>
+
+      <!-- Availability Toggle -->
+      <div class="icon-btn" id="avail-toggle" onclick="toggleAvailability()" title="Toggle availability">
+        <i class="fa fa-circle-check"></i>
+      </div>
+    </div>
+  </header>
+
+  <main class="page-content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+{% else %}
+  {% block content %}{% endblock %}
+{% endif %}
+
+{% endblock %}
+
+<!-- ── TOAST CONTAINER ── -->
+<div id="toast-container"></div>
+
+<!-- ── NOTIFICATIONS PANEL ── -->
+<div class="overlay" id="notif-overlay" onclick="closeNotifPanel()" style="display:none;z-index:1500;"></div>
+<div id="notif-panel" style="
+  position:fixed; top:0; right:-380px; width:380px; height:100vh;
+  background:var(--surface); border-left:1px solid var(--border);
+  z-index:1600; transition:right 0.3s cubic-bezier(0.4,0,0.2,1);
+  display:flex; flex-direction:column;
+">
+  <div style="padding:20px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+    <span style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700;">Notifications</span>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+      <button class="close-btn" onclick="closeNotifPanel()"><i class="fa fa-xmark"></i></button>
+    </div>
+  </div>
+  <div id="notif-list" style="flex:1;overflow-y:auto;padding:12px;"></div>
+</div>
+
+<!-- ── BLOOD REQUEST MODAL ── -->
+<div class="modal" id="request-modal">
+  <div class="overlay" onclick="closeModal('request-modal')" style="position:fixed;inset:0;z-index:-1;"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">🩸 Request Blood</span>
+      <button class="close-btn" onclick="closeModal('request-modal')"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="req-form" onsubmit="submitRequest(event)">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="input-group">
+            <label class="input-label">Blood Type *</label>
+            <select class="input" id="req-blood-type" required>
+              <option value="">Select type</option>
+              <option value="A_POSITIVE">A+</option>
+              <option value="A_NEGATIVE">A-</option>
+              <option value="B_POSITIVE">B+</option>
+              <option value="B_NEGATIVE">B-</option>
+              <option value="AB_POSITIVE">AB+</option>
+              <option value="AB_NEGATIVE">AB-</option>
+              <option value="O_POSITIVE">O+</option>
+              <option value="O_NEGATIVE">O-</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Urgency *</label>
+            <select class="input" id="req-urgency" required>
+              <option value="NORMAL">Normal</option>
+              <option value="URGENT">Urgent</option>
+              <option value="CRITICAL">🚨 Critical</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="input-group">
+            <label class="input-label">Units Needed</label>
+            <input type="number" class="input" id="req-units" min="1" max="10" value="1" />
+          </div>
+          <div class="input-group">
+            <label class="input-label">Contact Phone</label>
+            <input type="tel" class="input" id="req-phone" placeholder="+91 9999999999" />
+          </div>
+        </div>
+        <div class="input-group" style="margin-bottom:16px;">
+          <label class="input-label">Hospital Name *</label>
+          <input type="text" class="input" id="req-hospital" required placeholder="e.g. City General Hospital" />
+        </div>
+        <div class="input-group" style="margin-bottom:16px;">
+          <label class="input-label">Hospital Address</label>
+          <input type="text" class="input" id="req-address" placeholder="Full address" />
+        </div>
+        <div class="input-group" style="margin-bottom:16px;">
+          <label class="input-label">Additional Notes</label>
+          <textarea class="input" id="req-notes" rows="3" style="resize:vertical;" placeholder="Patient condition, ward number, etc."></textarea>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;padding:12px;background:var(--surface-2);border-radius:10px;">
+          <i class="fa fa-location-crosshairs" style="color:var(--crimson);"></i>
+          <span style="font-size:13px;color:var(--text-muted);" id="loc-status">Getting your location...</span>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('request-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitRequest(event)">
+        <i class="fa fa-paper-plane"></i> Send Request
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── GLOBAL JS ── -->
+<script>
+  // ── State ──
+  const TOKEN = '{{ request.session.jwt_token|default:"" }}';
+  let currentUser = null;
+  let currentLat = null, currentLng = null;
+  let stompClient = null;
+  let notifOpen = false;
+
+  try {
+    const raw = {{ user|default:"null"|safe }};
+    if (raw) currentUser = raw;
+  } catch(e) {}
+
+  // ── Init sidebar UI ──
+  function initSidebar() {
+    if (!currentUser) return;
+    const el = n => document.getElementById(n);
+    if (el('sb-name')) el('sb-name').textContent = currentUser.fullName || 'User';
+    if (el('sb-role')) el('sb-role').textContent = currentUser.role || 'DONOR';
+    if (el('sb-avatar')) el('sb-avatar').textContent = (currentUser.fullName || 'U')[0].toUpperCase();
+    if (el('sb-dot')) {
+      el('sb-dot').className = 'availability-dot' + (currentUser.isAvailable ? '' : ' offline');
+    }
+  }
+
+  // ── API helper ──
+  async function api(path, method='GET', body=null) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch('/proxy/' + path, opts);
+    return res.json();
+  }
+
+  // ── Toast ──
+  function toast(title, msg, type='info') {
+    const icons = { success:'✅', error:'🚨', warning:'⚠️', info:'💬' };
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.innerHTML = `
+      <span class="toast-icon">${icons[type]||'ℹ️'}</span>
+      <div class="toast-body">
+        <div class="toast-title">${title}</div>
+        ${msg ? `<div class="toast-msg">${msg}</div>` : ''}
+      </div>
+    `;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => {
+      el.style.animation = 'toast-out 0.3s forwards';
+      setTimeout(() => el.remove(), 300);
+    }, 4000);
+  }
+
+  // ── Modals ──
+  function openModal(id) { document.getElementById(id).classList.add('show'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+  // ── Sidebar mobile ──
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('show');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+  }
+
+  // ── Geolocation ──
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      currentLat = pos.coords.latitude;
+      currentLng = pos.coords.longitude;
+      const el = document.getElementById('loc-status');
+      if (el) el.textContent = `📍 Location acquired (${currentLat.toFixed(4)}, ${currentLng.toFixed(4)})`;
+    }, () => {
+      const el = document.getElementById('loc-status');
+      if (el) el.textContent = '⚠️ Location access denied — enter address manually.';
+    });
+  }
+
+  // ── Request Blood ──
+  async function submitRequest(e) {
+    if (e) e.preventDefault();
+    const get = id => document.getElementById(id)?.value;
+    const body = {
+      bloodType:       get('req-blood-type'),
+      urgency:         get('req-urgency'),
+      unitsNeeded:     parseInt(get('req-units')) || 1,
+      contactPhone:    get('req-phone'),
+      hospitalName:    get('req-hospital'),
+      hospitalAddress: get('req-address'),
+      description:     get('req-notes'),
+      latitude:        currentLat,
+      longitude:       currentLng
+    };
+    if (!body.bloodType || !body.hospitalName) {
+      return toast('Missing fields', 'Blood type and hospital name are required.', 'warning');
+    }
+    try {
+      const res = await api('requests', 'POST', body);
+      if (res.message) {
+        toast('🩸 Request Posted!', res.message, 'success');
+        closeModal('request-modal');
+      } else {
+        toast('Error', res.error || 'Failed to post request', 'error');
+      }
+    } catch {
+      toast('Error', 'Could not connect to backend', 'error');
+    }
+  }
+
+  // ── Toggle Availability ──
+  async function toggleAvailability() {
+    try {
+      const res = await api('users/toggle-availability', 'PATCH');
+      currentUser.isAvailable = res.isAvailable;
+      initSidebar();
+      toast('Availability Updated', res.isAvailable ? 'You are now available for donations' : 'You are now unavailable', res.isAvailable ? 'success' : 'warning');
+    } catch {
+      toast('Error', 'Could not update availability', 'error');
+    }
+  }
+
+  // ── Notification Count ──
+  async function loadUnreadCounts() {
+    if (!TOKEN) return;
+    try {
+      const n = await api('notifications/unread-count');
+      const m = await api('messages/unread-count');
+      const nb = document.getElementById('notif-badge');
+      const mb = document.getElementById('msg-badge');
+      const rb = document.getElementById('req-badge');
+
+      if (nb && n.count > 0) { nb.textContent = n.count; nb.style.display = 'inline-block'; }
+      if (mb && m.count > 0) { mb.textContent = m.count; mb.classList.add('show'); }
+    } catch {}
+  }
+
+  // ── Notifications Panel ──
+  function openNotifPanel() {
+    document.getElementById('notif-panel').style.right = '0';
+    document.getElementById('notif-overlay').style.display = 'block';
+    notifOpen = true;
+    loadNotifications();
+  }
+
+  function closeNotifPanel() {
+    document.getElementById('notif-panel').style.right = '-380px';
+    document.getElementById('notif-overlay').style.display = 'none';
+    notifOpen = false;
+  }
+
+  async function loadNotifications() {
+    const list = document.getElementById('notif-list');
+    list.innerHTML = '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+    try {
+      const data = await api('notifications');
+      if (!data.length) {
+        list.innerHTML = '<div class="empty-state"><i class="fa fa-bell-slash"></i><h3>All caught up!</h3><p>No notifications yet.</p></div>';
+        return;
+      }
+      list.innerHTML = data.map(n => `
+        <div onclick="markRead(${n.id})" style="
+          padding:14px; border-radius:10px; margin-bottom:8px;
+          background:${n.isRead ? 'transparent' : 'rgba(220,20,60,0.07)'};
+          border:1px solid ${n.isRead ? 'transparent' : 'var(--border)'};
+          cursor:pointer; transition:all 0.2s;
+        ">
+          <div style="display:flex;align-items:start;gap:10px;">
+            <span style="font-size:20px;">${typeIcon(n.type)}</span>
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:13px;margin-bottom:3px;">${n.title}</div>
+              <div style="font-size:12px;color:var(--text-muted);">${n.message}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">${timeAgo(n.createdAt)}</div>
+            </div>
+            ${!n.isRead ? '<div style="width:8px;height:8px;border-radius:50%;background:var(--crimson);margin-top:4px;flex-shrink:0;"></div>' : ''}
+          </div>
+        </div>
+      `).join('');
+    } catch {
+      list.innerHTML = '<div class="empty-state"><i class="fa fa-exclamation-circle"></i><h3>Error</h3><p>Could not load notifications.</p></div>';
+    }
+  }
+
+  function typeIcon(type) {
+    const m = { BLOOD_REQUEST:'🆘', MATCH_FOUND:'🎯', MESSAGE:'💬', DONATION_REMINDER:'📅', SYSTEM:'⚙️', EMERGENCY:'🚨' };
+    return m[type] || '🔔';
+  }
+
+  async function markRead(id) {
+    await api(`notifications/${id}/read`, 'PATCH');
+    loadNotifications();
+    loadUnreadCounts();
+  }
+
+  async function markAllRead() {
+    await api('notifications/read-all', 'PATCH');
+    loadNotifications();
+    loadUnreadCounts();
+    const nb = document.getElementById('notif-badge');
+    if (nb) nb.style.display = 'none';
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr), now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    return Math.floor(diff/86400) + 'd ago';
+  }
+
+  // ── WebSocket (SockJS + STOMP) ──
+  function connectWebSocket() {
+    if (!TOKEN || !currentUser) return;
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js';
+    script.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js';
+      s2.onload = () => {
+        const sock = new SockJS('http://localhost:8080/ws');
+        stompClient = Stomp.over(sock);
+        stompClient.debug = null;
+        stompClient.connect({ Authorization: 'Bearer ' + TOKEN }, () => {
+          const email = currentUser?.email;
+          if (!email) return;
+
+          stompClient.subscribe(`/user/${email}/queue/notifications`, msg => {
+            const data = JSON.parse(msg.body);
+            toast(data.type === 'BLOOD_REQUEST' ? '🆘 Blood Request Nearby!' : '🎯 Donor Found!',
+              data.message || 'Check your notifications', 'error');
+            loadUnreadCounts();
+            if (notifOpen) loadNotifications();
+          });
+
+          stompClient.subscribe(`/user/${email}/queue/messages`, msg => {
+            const data = JSON.parse(msg.body);
+            toast('💬 New Message', `From ${data.senderName}: ${data.data?.content?.substring(0,40)}...`, 'info');
+            loadUnreadCounts();
+            if (window.onNewMessage) window.onNewMessage(data);
+          });
+        });
+      };
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(script);
+  }
+
+  function bloodTypeClass(bt) {
+    if (!bt) return '';
+    if (bt.startsWith('O')) return 'blood-O';
+    if (bt.startsWith('A_P') || bt.startsWith('A_N') && !bt.startsWith('AB')) {
+      return bt.startsWith('AB') ? 'blood-AB' : 'blood-A';
+    }
+    if (bt.startsWith('AB')) return 'blood-AB';
+    if (bt.startsWith('B')) return 'blood-B';
+    return 'blood-O';
+  }
+
+  function formatBloodType(bt) {
+    const m = {A_POSITIVE:'A+',A_NEGATIVE:'A-',B_POSITIVE:'B+',B_NEGATIVE:'B-',AB_POSITIVE:'AB+',AB_NEGATIVE:'AB-',O_POSITIVE:'O+',O_NEGATIVE:'O-'};
+    return m[bt] || bt || '?';
+  }
+
+  // ── Boot ──
+  document.addEventListener('DOMContentLoaded', () => {
+    initSidebar();
+    if (TOKEN) {
+      loadUnreadCounts();
+      setInterval(loadUnreadCounts, 30000);
+      connectWebSocket();
+    }
+  });
+</script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>
