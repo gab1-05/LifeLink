@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}My Profile - LifeLink{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+<style>
+  .profile-hero{background:linear-gradient(135deg,rgba(220,20,60,.14),rgba(41,121,255,.08));border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;display:flex;align-items:center;gap:24px;margin-bottom:24px;flex-wrap:wrap;}
+  .profile-avatar-wrap{position:relative;flex-shrink:0;}
+  .profile-avatar{width:92px;height:92px;border-radius:20px;background:linear-gradient(135deg,var(--crimson),var(--blue));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:38px;font-weight:800;color:#fff;border:3px solid rgba(255,255,255,.12);}
+  .profile-avail-badge{position:absolute;bottom:-6px;right:-6px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:2px solid var(--surface);}
+  .profile-avail-badge.yes{background:var(--green);color:#001b0d;}
+  .profile-avail-badge.no{background:var(--text-muted);color:#111;}
+  .profile-info{flex:1;min-width:240px;}
+  .profile-name{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:8px;}
+  .profile-meta{font-size:14px;color:var(--text-muted);display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+  .profile-meta span{display:flex;align-items:center;gap:6px;}
+  .profile-stats{display:flex;gap:14px;flex-wrap:wrap;}
+  .ps{min-width:100px;text-align:center;padding:12px 16px;background:var(--surface-2);border-radius:12px;border:1px solid var(--border);}
+  .ps-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--crimson-l);}
+  .ps-lbl{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .profile-actions{display:flex;flex-direction:column;gap:8px;align-self:flex-start;}
+  .profile-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:24px;}
+  .section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;}
+  .section-card h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+  .edit-section{display:flex;flex-direction:column;gap:16px;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);}
+  .toggle-row span{font-size:13px;color:var(--text-muted);}
+  .toggle-row input{width:20px;height:20px;accent-color:var(--crimson);}
+  .location-tools{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;}
+  .location-results{display:none;margin-top:8px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);overflow:hidden;}
+  .location-result{width:100%;border:0;border-bottom:1px solid var(--border);background:transparent;color:var(--text);padding:10px 12px;text-align:left;cursor:pointer;font-size:13px;}
+  .location-result:last-child{border-bottom:0;}
+  .location-result:hover{background:var(--surface-3);}
+  #profile-location-map{height:240px;min-height:240px;width:100%;border-radius:12px;border:1px solid var(--border);overflow:hidden;background:var(--surface-2);margin-top:10px;}
+  .saved-location-pin{width:16px;height:16px;border-radius:50%;background:var(--crimson);border:3px solid #fff;box-shadow:0 0 0 2px rgba(220,20,60,.3);}
+  .my-location-pin{width:14px;height:14px;border-radius:50%;background:var(--blue);border:3px solid #fff;box-shadow:0 0 0 6px rgba(41,121,255,.2);}
+  .history-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+  .history-item:last-child{border-bottom:0;}
+  .hi-icon{width:40px;height:40px;border-radius:10px;background:rgba(220,20,60,.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+  .eligibility-bar{height:8px;border-radius:4px;background:var(--surface-2);margin-top:8px;overflow:hidden;}
+  .eligibility-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--crimson),var(--green));transition:width 1s ease;}
+  @media(max-width:920px){.profile-layout{grid-template-columns:1fr;}.profile-actions{width:100%;}.profile-actions .btn{justify-content:center;}}
+  @media(max-width:640px){.form-row,.location-tools{grid-template-columns:1fr;}.profile-hero{align-items:flex-start;}.profile-avatar{width:78px;height:78px;font-size:32px;}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-hero">
+  <div class="profile-avatar-wrap">
+    <div class="profile-avatar" id="p-avatar">?</div>
+    <div class="profile-avail-badge yes" id="p-avail-badge">Available</div>
+  </div>
+  <div class="profile-info">
+    <div class="profile-name" id="p-name">Loading...</div>
+    <div class="profile-meta">
+      <span><i class="fa fa-envelope" style="color:var(--crimson);"></i><span id="p-email">-</span></span>
+      <span><i class="fa fa-phone" style="color:var(--crimson);"></i><span id="p-phone">-</span></span>
+      <span><i class="fa fa-location-dot" style="color:var(--crimson);"></i><span id="p-city">-</span></span>
+      <span><i class="fa fa-tag" style="color:var(--crimson);"></i><span id="p-role">-</span></span>
+    </div>
+    <div class="profile-stats">
+      <div class="ps"><div class="ps-val" id="p-donations">0</div><div class="ps-lbl">Donations</div></div>
+      <div class="ps"><div class="ps-val" id="p-rating" style="color:var(--gold);">-</div><div class="ps-lbl">Rating</div></div>
+      <div class="ps"><div class="ps-val" id="p-blood" style="color:#CE93D8;">?</div><div class="ps-lbl">Blood Type</div></div>
+    </div>
+  </div>
+  <div class="profile-actions">
+    <button class="btn btn-primary btn-sm" type="button" onclick="saveProfile()"><i class="fa fa-save"></i> Save Changes</button>
+    <button class="btn btn-secondary btn-sm" id="avail-btn" type="button" onclick="toggleAvail()"><i class="fa fa-toggle-on"></i> Toggle Availability</button>
+  </div>
+</div>
+
+<div class="profile-layout">
+  <div class="section-card">
+    <h3>Edit Profile</h3>
+    <div class="edit-section">
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label" for="edit-name">Full Name</label>
+          <input type="text" class="input" id="edit-name" placeholder="Your full name">
+        </div>
+        <div class="input-group">
+          <label class="input-label" for="edit-phone">Phone</label>
+          <input type="tel" class="input" id="edit-phone" placeholder="+91 9999999999">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="input-group">
+          <label class="input-label" for="edit-city">Address / City</label>
+          <input type="text" class="input" id="edit-city" placeholder="Search or enter your address">
+        </div>
+        <div class="input-group">
+          <label class="input-label" for="edit-blood">Blood Type</label>
+          <select class="input" id="edit-blood">
+            <option value="">Select</option>
+            <option value="A_POSITIVE">A+</option><option value="A_NEGATIVE">A-</option>
+            <option value="B_POSITIVE">B+</option><option value="B_NEGATIVE">B-</option>
+            <option value="AB_POSITIVE">AB+</option><option value="AB_NEGATIVE">AB-</option>
+            <option value="O_POSITIVE">O+</option><option value="O_NEGATIVE">O-</option>
+          </select>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <strong>Email notifications</strong>
+          <span>Receive request and match alerts by email.</span>
+        </div>
+        <input type="checkbox" id="edit-email-notifications">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="profile-location-search">Location</label>
+        <div class="location-tools">
+          <input type="text" class="input" id="profile-location-search" placeholder="Search a location on the map" autocomplete="off">
+          <button class="btn btn-secondary" type="button" onclick="useProfileCurrentLocation()"><i class="fa fa-location-crosshairs"></i> Current Location</button>
+        </div>
+        <div class="location-results" id="profile-location-results"></div>
+        <div id="profile-location-map"></div>
+        <span id="loc-info" style="font-size:12px;color:var(--text-muted);margin-top:6px;display:block;"></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:24px;">
+    <div class="section-card">
+      <h3>Donation Eligibility</h3>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Donors must wait 90 days between donations.</div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;">
+        <span>Progress to next donation</span>
+        <span id="elig-pct" style="color:var(--green);font-weight:600;">-</span>
+      </div>
+      <div class="eligibility-bar"><div class="eligibility-fill" id="elig-bar" style="width:0%"></div></div>
+      <div style="margin-top:12px;font-size:13px;">
+        Last donation: <strong id="last-donation">Never</strong><br>
+        Next eligible: <strong id="next-eligible" style="color:var(--green);">Ready now</strong>
+      </div>
+    </div>
+    <div class="section-card">
+      <h3>Blood Compatibility</h3>
+      <div id="compatibility-info" style="font-size:13px;color:var(--text-muted);">Update your blood type to see compatibility info.</div>
+    </div>
+    <div class="section-card">
+      <h3>Recent Activity</h3>
+      <div id="recent-activity"><div style="text-align:center;padding:30px;"><div class="spinner" style="margin:0 auto;"></div></div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+<script>
+  const BT_LABEL = {A_POSITIVE:'A+',A_NEGATIVE:'A-',B_POSITIVE:'B+',B_NEGATIVE:'B-',AB_POSITIVE:'AB+',AB_NEGATIVE:'AB-',O_POSITIVE:'O+',O_NEGATIVE:'O-'};
+  const COMPATIBILITY = {
+    O_NEGATIVE:{donate:'Everyone (Universal Donor)',receive:'O-'},
+    O_POSITIVE:{donate:'O+, A+, B+, AB+',receive:'O+, O-'},
+    A_NEGATIVE:{donate:'A+, A-, AB+, AB-',receive:'A-, O-'},
+    A_POSITIVE:{donate:'A+, AB+',receive:'A+, A-, O+, O-'},
+    B_NEGATIVE:{donate:'B+, B-, AB+, AB-',receive:'B-, O-'},
+    B_POSITIVE:{donate:'B+, AB+',receive:'B+, B-, O+, O-'},
+    AB_NEGATIVE:{donate:'AB+, AB-',receive:'A-, B-, AB-, O-'},
+    AB_POSITIVE:{donate:'AB+ only',receive:'Everyone (Universal Receiver)'}
+  };
+  let profileMap = null;
+  let profileMarker = null;
+  let myLocationMarker = null;
+  let profileLat = null;
+  let profileLng = null;
+  let searchTimer = null;
+
+  function savedLocationIcon() {
+    return L.divIcon({
+      className: '',
+      html: '<div class="saved-location-pin"></div>',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8]
+    });
+  }
+
+  function myLocationIcon() {
+    return L.divIcon({
+      className: '',
+      html: '<div class="my-location-pin"></div>',
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+  }
+
+  function setProfileLocation(lat, lng, label) {
+    profileLat = Number(lat);
+    profileLng = Number(lng);
+    if (label) {
+      byId('edit-city').value = label;
+      byId('profile-location-search').value = label;
+    }
+    byId('loc-info').textContent = `Location set: ${profileLat.toFixed(4)}, ${profileLng.toFixed(4)}`;
+    if (!profileMap || typeof L === 'undefined') return;
+    profileMap.setView([profileLat, profileLng], 14);
+    if (profileMarker) profileMarker.setLatLng([profileLat, profileLng]);
+    else profileMarker = L.marker([profileLat, profileLng], {draggable:true, icon:savedLocationIcon()}).addTo(profileMap);
+    profileMarker.on('dragend', () => {
+      const pos = profileMarker.getLatLng();
+      profileLat = pos.lat;
+      profileLng = pos.lng;
+      byId('loc-info').textContent = `Location set: ${profileLat.toFixed(4)}, ${profileLng.toFixed(4)}`;
+    });
+    setTimeout(() => profileMap.invalidateSize(), 80);
+  }
+
+  function setMyLocationMarker(lat, lng) {
+    if (!profileMap || typeof L === 'undefined') return;
+    if (myLocationMarker) myLocationMarker.setLatLng([lat, lng]);
+    else myLocationMarker = L.marker([lat, lng], { icon: myLocationIcon(), keyboard: false }).addTo(profileMap);
+  }
+
+  function initProfileMap(user) {
+    if (typeof L === 'undefined' || !byId('profile-location-map')) return;
+    const lat = user.latitude || 19.0760;
+    const lng = user.longitude || 72.8777;
+    profileMap = L.map('profile-location-map').setView([lat, lng], user.latitude ? 14 : 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'&copy; OpenStreetMap'}).addTo(profileMap);
+    profileMap.on('click', e => setProfileLocation(e.latlng.lat, e.latlng.lng, byId('edit-city').value));
+    if (user.latitude && user.longitude) setProfileLocation(user.latitude, user.longitude, user.city || '');
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => setMyLocationMarker(pos.coords.latitude, pos.coords.longitude),
+        () => {},
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      );
+    }
+    setTimeout(() => profileMap.invalidateSize(), 200);
+  }
+
+  async function searchProfileLocation(query) {
+    const box = byId('profile-location-results');
+    if (!query || query.trim().length < 3) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(query)}`);
+      const places = await res.json();
+      box.innerHTML = places.map(p => `<button type="button" class="location-result" data-lat="${p.lat}" data-lng="${p.lon}" data-label="${esc(p.display_name)}">${esc(p.display_name)}</button>`).join('');
+      box.style.display = places.length ? 'block' : 'none';
+      box.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setProfileLocation(btn.dataset.lat, btn.dataset.lng, btn.dataset.label);
+          box.style.display = 'none';
+        });
+      });
+    } catch {
+      box.style.display = 'none';
+    }
+  }
+
+  function useProfileCurrentLocation() {
+    if (!navigator.geolocation) return toast('Location unavailable', 'Your browser does not support current location.', 'warning');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setMyLocationMarker(pos.coords.latitude, pos.coords.longitude);
+        setProfileLocation(pos.coords.latitude, pos.coords.longitude, byId('edit-city').value || 'Current location');
+      },
+      () => toast('Location blocked', 'Allow location access or search for a location.', 'warning'),
+      {enableHighAccuracy:true, timeout:10000}
+    );
+  }
+
+  async function loadProfile() {
+    try {
+      const user = await api('users/me');
+      currentUser = user;
+      const name = user.fullName || 'Unknown';
+      byId('p-avatar').textContent = name[0].toUpperCase();
+      byId('p-name').textContent = name;
+      byId('p-email').textContent = user.email || '-';
+      byId('p-phone').textContent = user.phone || 'Not set';
+      byId('p-city').textContent = user.city || 'Not set';
+      byId('p-role').textContent = user.role || 'DONOR';
+      byId('p-donations').textContent = user.totalDonations || 0;
+      byId('p-rating').textContent = user.rating ? `${parseFloat(user.rating).toFixed(1)} star` : '-';
+      byId('p-blood').textContent = BT_LABEL[user.bloodType] || '?';
+      const badge = byId('p-avail-badge');
+      badge.textContent = user.isAvailable ? 'Available' : 'Unavailable';
+      badge.className = `profile-avail-badge ${user.isAvailable ? 'yes' : 'no'}`;
+      byId('edit-name').value = user.fullName || '';
+      byId('edit-phone').value = user.phone || '';
+      byId('edit-city').value = user.city || '';
+      byId('profile-location-search').value = user.city || '';
+      byId('edit-email-notifications').checked = user.emailNotifications !== false;
+      if (user.bloodType) byId('edit-blood').value = user.bloodType;
+      if (!profileMap) initProfileMap(user);
+      else if (user.latitude && user.longitude) setProfileLocation(user.latitude, user.longitude, user.city || '');
+      renderEligibility(user);
+      renderCompatibility(user.bloodType);
+      await renderRecentActivity();
+      initSidebar();
+    } catch (err) {
+      toast('Error', 'Could not load profile.', 'error');
+    }
+  }
+
+  function renderEligibility(user) {
+    if (!user.lastDonationDate) return;
+    const last = new Date(user.lastDonationDate);
+    const next = new Date(last.getTime() + 90*24*60*60*1000);
+    const pct = Math.min(100, Math.round(Math.max(0, new Date() - last) / (90*24*60*60*1000) * 100));
+    byId('elig-pct').textContent = pct + '%';
+    byId('elig-bar').style.width = pct + '%';
+    byId('last-donation').textContent = last.toLocaleDateString();
+    byId('next-eligible').textContent = new Date() >= next ? 'Ready now' : next.toLocaleDateString();
+  }
+
+  function renderCompatibility(bt) {
+    const c = COMPATIBILITY[bt];
+    if (!c) return;
+    byId('compatibility-info').innerHTML = `<div style="margin-bottom:10px;"><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">CAN DONATE TO</div><div style="font-weight:600;color:var(--green);">${esc(c.donate)}</div></div><div><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">CAN RECEIVE FROM</div><div style="font-weight:600;color:var(--gold);">${esc(c.receive)}</div></div>`;
+  }
+
+  async function renderRecentActivity() {
+    const requests = await api('requests/my');
+    const actEl = byId('recent-activity');
+    if (!requests.length) {
+      actEl.innerHTML = '<div class="empty-state" style="padding:20px 0;"><i class="fa fa-inbox"></i><h3 style="font-size:14px;">No activity yet</h3></div>';
+      return;
+    }
+    actEl.innerHTML = requests.slice(0,4).map(r => `<div class="history-item"><div class="hi-icon"><i class="fa fa-droplet"></i></div><div style="flex:1;"><div style="font-size:13px;font-weight:600;">${esc(r.hospitalName || 'Request')}</div><div style="font-size:11px;color:var(--text-muted);">${esc(BT_LABEL[r.bloodType] || '?')} - ${esc(r.status)}</div></div><span class="blood-badge urgency-${esc(r.urgency)}" style="font-size:10px;">${esc(r.urgency)}</span></div>`).join('');
+  }
+
+  async function saveProfile() {
+    const updates = {
+      fullName: byId('edit-name').value,
+      phone: byId('edit-phone').value,
+      city: byId('edit-city').value,
+      emailNotifications: byId('edit-email-notifications').checked
+    };
+    const bt = byId('edit-blood').value;
+    if (bt) updates.bloodType = bt;
+    if (profileLat != null && profileLng != null) {
+      updates.latitude = profileLat;
+      updates.longitude = profileLng;
+    }
+    try {
+      const res = await api('users/me', 'PUT', updates);
+      currentUser = res.user;
+      toast('Saved', 'Your profile has been updated.', 'success');
+      await loadProfile();
+    } catch (err) {
+      toast('Error', err.message || 'Could not save profile.', 'error');
+    }
+  }
+
+  async function toggleAvail() {
+    try {
+      const res = await api('users/toggle-availability', 'PATCH');
+      currentUser = currentUser || {};
+      currentUser.isAvailable = res.isAvailable;
+      toast('Availability Updated', res.isAvailable ? 'You are now available' : 'You are now unavailable', res.isAvailable ? 'success' : 'warning');
+      await loadProfile();
+    } catch {
+      toast('Error', 'Could not update availability.', 'error');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    byId('profile-location-search').addEventListener('input', e => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => searchProfileLocation(e.target.value), 350);
+    });
+    loadProfile();
+  });
+</script>
+{% endblock %}

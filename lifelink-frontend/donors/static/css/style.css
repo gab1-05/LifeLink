@@ -1,0 +1,258 @@
+#map {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  min-height: 500px;
+  width: 100%;
+  z-index: 0;
+}
+
+#fallback-map {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+/* Popup Styling */
+.marker-popup {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 12px;
+  line-height: 1.7;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+  border-radius: 8px;
+}
+
+.marker-popup strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 0.3px;
+}
+
+.marker-popup span {
+  display: block;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 5px;
+  padding: 2px 0;
+}
+
+.blood-type {
+  font-weight: 700;
+  color: #DC143C !important;
+  font-size: 14px !important;
+}
+
+.urgency-critical {
+  color: #FF3358;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.urgency-urgent {
+  color: #FFB700;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.urgency-normal {
+  color: #00E676;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.request-popup {
+  border-left: 5px solid #FF6B6B;
+  padding-left: 10px;
+}
+
+.hospital-popup {
+  border-left: 5px solid #2979FF;
+  padding-left: 10px;
+}
+
+/* Popup Buttons Container */
+.popup-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Individual Button Styling */
+.popup-btn {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+  text-align: center;
+  white-space: nowrap;
+  width: 100%;
+  letter-spacing: 0.4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.popup-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.popup-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.popup-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.popup-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+}
+
+.popup-btn-map {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.popup-btn-map:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.popup-btn-message {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.popup-btn-message:hover {
+  background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+  box-shadow: 0 8px 20px rgba(245, 87, 108, 0.3);
+}
+
+.popup-btn-donate {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
+.popup-btn-donate:hover {
+  background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
+}
+
+.popup-btn-respond {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  color: white;
+}
+
+.popup-btn-respond:hover {
+  background: linear-gradient(135deg, #38f9d7 0%, #43e97b 100%);
+  box-shadow: 0 8px 20px rgba(67, 233, 123, 0.3);
+}
+
+/* Leaflet Popup Container Adjustments */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: white;
+}
+
+.leaflet-popup-tip {
+  background-color: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: -2px -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+
+.leaflet-popup {
+  margin-bottom: 5px;
+}
+
+/* User Location Popup */
+.user-location-popup {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 12px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(74, 144, 226, 0.05) 0%, rgba(74, 144, 226, 0.02) 100%);
+  border-radius: 8px;
+}
+
+.user-location-popup strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 0.3px;
+}
+
+.user-location-popup span {
+  display: block;
+  font-size: 13px;
+  color: #4A90E2;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+/* User Location Marker Animation */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.7), 0 0 0 3px #4A90E2, 0 0 20px rgba(74, 144, 226, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 20px rgba(74, 144, 226, 0), 0 0 0 3px #4A90E2, 0 0 20px rgba(74, 144, 226, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 144, 226, 0), 0 0 0 3px #4A90E2, 0 0 20px rgba(74, 144, 226, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Apply animation to user marker */
+.leaflet-marker-pane .user-location-marker {
+  animation: pulse-ring 2s infinite;
+  filter: drop-shadow(0 4px 8px rgba(74, 144, 226, 0.4));
+}
+
+/* User radius circle styling */
+.user-radius-circle {
+  pointer-events: none;
+}
+
+/* User location popup container styling */
+.user-location-popup-container.leaflet-popup {
+  z-index: 1001;
+}
+
+.user-location-popup-container .leaflet-popup-content-wrapper {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+  border: 2px solid #4A90E2;
+  box-shadow: 0 8px 24px rgba(74, 144, 226, 0.25), 0 0 20px rgba(74, 144, 226, 0.15);
+}
+
+.user-location-popup-container .leaflet-popup-tip {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+  border-color: #4A90E2;
+}

@@ -1,0 +1,1050 @@
+{% extends "base.html" %}
+{% block title %}Donor Profile — LifeLink{% endblock %}
+{% block page_title %}Donor Profile{% endblock %}
+
+{% block content %}
+<style>
+  .profile-shell{
+    display:grid;
+    gap:24px;
+  }
+
+  .profile-hero{
+    position:relative;
+    display:grid;
+    grid-template-columns:minmax(0, 1.3fr) minmax(280px, .7fr);
+    gap:24px;
+    padding:28px;
+    background:
+      radial-gradient(circle at top right, rgba(220,20,60,0.10), transparent 30%),
+      linear-gradient(180deg, var(--surface), var(--surface-2));
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    overflow:hidden;
+  }
+
+  .profile-hero::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:linear-gradient(90deg, rgba(220,20,60,0.03), transparent 42%, rgba(255,255,255,0.02));
+  }
+
+  .profile-main{
+    position:relative;
+    z-index:1;
+    display:flex;
+    gap:20px;
+    min-width:0;
+  }
+
+  .profile-avatar{
+    width:92px;
+    height:92px;
+    border-radius:24px;
+    display:grid;
+    place-items:center;
+    flex-shrink:0;
+    color:#fff;
+    font-size:30px;
+    font-weight:800;
+    letter-spacing:.02em;
+    background:linear-gradient(135deg, var(--crimson), #8A2BE2);
+    box-shadow:0 16px 32px rgba(220,20,60,0.20);
+    border:1px solid rgba(255,255,255,0.08);
+  }
+
+  .profile-copy{
+    min-width:0;
+  }
+
+  .profile-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 10px;
+    margin-bottom:12px;
+    border-radius:999px;
+    background:rgba(220,20,60,0.10);
+    border:1px solid rgba(220,20,60,0.18);
+    color:var(--crimson-l);
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+  }
+
+  .profile-name{
+    margin:0 0 8px;
+    font-size:30px;
+    line-height:1.15;
+    color:var(--text);
+    font-weight:800;
+    letter-spacing:-0.02em;
+  }
+
+  .profile-sub{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px 14px;
+    margin-bottom:14px;
+    color:var(--text-muted);
+    font-size:13px;
+  }
+
+  .profile-sub span{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+  }
+
+  .profile-bio{
+    margin:0;
+    max-width:720px;
+    color:var(--text-muted);
+    font-size:14px;
+    line-height:1.7;
+  }
+
+  .profile-actions{
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    gap:16px;
+  }
+
+  .status-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:18px;
+    box-shadow:0 12px 24px rgba(0,0,0,0.14);
+  }
+
+  .status-label{
+    font-size:12px;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    font-weight:700;
+    margin-bottom:10px;
+  }
+
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:700;
+    border:1px solid var(--border);
+  }
+
+  .status-pill.available{
+    background:rgba(0,230,118,0.10);
+    border-color:rgba(0,230,118,0.24);
+    color:var(--green);
+  }
+
+  .status-pill.unavailable{
+    background:rgba(255,255,255,0.04);
+    border-color:rgba(255,255,255,0.08);
+    color:var(--text-muted);
+  }
+
+  .status-dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:currentColor;
+  }
+
+  .status-meta{
+    margin-top:12px;
+    display:grid;
+    gap:10px;
+  }
+
+  .status-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    font-size:13px;
+  }
+
+  .status-row span:first-child{
+    color:var(--text-muted);
+  }
+
+  .status-row strong{
+    color:var(--text);
+    font-weight:700;
+    text-align:right;
+  }
+
+  .quick-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+
+  .quick-actions .btn{
+    flex:1 1 140px;
+    justify-content:center;
+  }
+
+  .profile-grid{
+    display:grid;
+    grid-template-columns:minmax(0, 1.35fr) minmax(320px, .65fr);
+    gap:24px;
+  }
+
+  .profile-column{
+    display:grid;
+    gap:24px;
+  }
+
+  .profile-card{
+    background:linear-gradient(180deg, var(--surface), var(--surface-2));
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    overflow:hidden;
+  }
+
+  .profile-card .card-header{
+    padding:20px 24px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+  }
+
+  .card-title-wrap{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:0;
+  }
+
+  .title-dot{
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:var(--crimson);
+    box-shadow:0 0 0 4px rgba(220,20,60,0.12);
+    flex-shrink:0;
+  }
+
+  .profile-card .card-title{
+    font-size:15px;
+    font-weight:700;
+    color:var(--text);
+  }
+
+  .profile-card .card-body{
+    padding:22px 24px;
+  }
+
+  .info-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:16px;
+  }
+
+  .info-item{
+    padding:16px;
+    border-radius:14px;
+    background:var(--surface-2);
+    border:1px solid rgba(255,255,255,0.05);
+  }
+
+  .info-label{
+    margin-bottom:6px;
+    font-size:12px;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    font-weight:700;
+  }
+
+  .info-value{
+    font-size:15px;
+    color:var(--text);
+    font-weight:700;
+    line-height:1.45;
+    word-break:break-word;
+  }
+
+  .accent-red{ color:var(--crimson-l); }
+  .accent-green{ color:var(--green); }
+  .accent-gold{ color:var(--gold); }
+  .accent-blue{ color:#7CB7FF; }
+  .accent-purple{ color:#D7A8FF; }
+
+  .stats-row{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:16px;
+  }
+
+  .mini-stat{
+    padding:18px 16px;
+    border-radius:14px;
+    background:var(--surface-2);
+    border:1px solid rgba(255,255,255,0.05);
+    text-align:center;
+    transition:transform .2s ease, border-color .2s ease;
+  }
+
+  .mini-stat:hover{
+    transform:translateY(-2px);
+    border-color:rgba(220,20,60,0.18);
+  }
+
+  .mini-stat-value{
+    font-size:24px;
+    line-height:1.1;
+    font-weight:800;
+    color:var(--text);
+    letter-spacing:-0.02em;
+  }
+
+  .mini-stat-label{
+    margin-top:6px;
+    font-size:12px;
+    color:var(--text-muted);
+    font-weight:600;
+  }
+
+  .availability-banner{
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+    padding:16px 18px;
+    border-radius:16px;
+    background:rgba(220,20,60,0.08);
+    border:1px solid rgba(220,20,60,0.16);
+  }
+
+  .availability-banner.green{
+    background:rgba(0,230,118,0.08);
+    border-color:rgba(0,230,118,0.18);
+  }
+
+  .availability-icon{
+    width:42px;
+    height:42px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    flex-shrink:0;
+    font-size:16px;
+    background:rgba(255,255,255,0.05);
+    color:var(--crimson-l);
+  }
+
+  .availability-banner.green .availability-icon{
+    color:var(--green);
+  }
+
+  .availability-text h4{
+    margin:0 0 4px;
+    color:var(--text);
+    font-size:15px;
+    font-weight:700;
+  }
+
+  .availability-text p{
+    margin:0;
+    color:var(--text-muted);
+    font-size:13px;
+    line-height:1.6;
+  }
+
+  .history-list{
+    display:grid;
+    gap:12px;
+  }
+
+  .history-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:16px;
+    border-radius:14px;
+    background:var(--surface-2);
+    border:1px solid rgba(255,255,255,0.05);
+  }
+
+  .history-left{
+    min-width:0;
+  }
+
+  .history-title{
+    margin:0 0 4px;
+    font-size:14px;
+    font-weight:700;
+    color:var(--text);
+  }
+
+  .history-meta{
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+
+  .history-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 10px;
+    border-radius:999px;
+    white-space:nowrap;
+    font-size:11px;
+    font-weight:700;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(255,255,255,0.04);
+    color:var(--text-muted);
+  }
+
+  .history-badge.success{
+    background:rgba(0,230,118,0.10);
+    border-color:rgba(0,230,118,0.24);
+    color:var(--green);
+  }
+
+  .history-badge.pending{
+    background:rgba(255,183,0,0.10);
+    border-color:rgba(255,183,0,0.24);
+    color:var(--gold);
+  }
+
+  .history-badge.cancelled{
+    background:rgba(220,20,60,0.10);
+    border-color:rgba(220,20,60,0.22);
+    color:var(--crimson-l);
+  }
+
+  .side-stack{
+    display:grid;
+    gap:24px;
+  }
+
+  .blood-type-card{
+    text-align:center;
+    padding:24px 20px;
+  }
+
+  .blood-bubble{
+    width:92px;
+    height:92px;
+    border-radius:24px;
+    margin:0 auto 14px;
+    display:grid;
+    place-items:center;
+    background:linear-gradient(135deg, rgba(220,20,60,0.18), rgba(138,43,226,0.16));
+    border:1px solid rgba(220,20,60,0.16);
+    box-shadow:0 14px 30px rgba(220,20,60,0.12);
+    font-size:30px;
+    font-weight:800;
+    color:var(--crimson-l);
+  }
+
+  .blood-title{
+    font-size:13px;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    font-weight:700;
+    margin-bottom:8px;
+  }
+
+  .blood-value{
+    font-size:28px;
+    font-weight:800;
+    color:var(--text);
+    letter-spacing:-0.02em;
+  }
+
+  .blood-note{
+    margin-top:8px;
+    font-size:13px;
+    color:var(--text-muted);
+    line-height:1.6;
+  }
+
+  .contact-list{
+    display:grid;
+    gap:12px;
+  }
+
+  .contact-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 16px;
+    border-radius:14px;
+    background:var(--surface-2);
+    border:1px solid rgba(255,255,255,0.05);
+  }
+
+  .contact-icon{
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    flex-shrink:0;
+    color:var(--crimson-l);
+    background:rgba(220,20,60,0.10);
+    border:1px solid rgba(220,20,60,0.16);
+  }
+
+  .contact-copy{
+    min-width:0;
+  }
+
+  .contact-copy .label{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-bottom:3px;
+  }
+
+  .contact-copy .value{
+    font-size:14px;
+    color:var(--text);
+    font-weight:600;
+    line-height:1.45;
+    word-break:break-word;
+  }
+
+  .empty-state{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:10px;
+    padding:32px 18px;
+    color:var(--text-muted);
+  }
+
+  .empty-state i{
+    font-size:22px;
+    color:var(--crimson-l);
+  }
+
+  .empty-state h3{
+    margin:0;
+    font-size:15px;
+    color:var(--text);
+  }
+
+  .empty-state p{
+    margin:0;
+    font-size:13px;
+    color:var(--text-muted);
+  }
+
+  @media (max-width: 1100px){
+    .profile-hero,
+    .profile-grid{
+      grid-template-columns:1fr;
+    }
+
+    .stats-row{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 700px){
+    .profile-hero{
+      padding:20px;
+    }
+
+    .profile-main{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+
+    .info-grid,
+    .stats-row{
+      grid-template-columns:1fr;
+    }
+
+    .profile-card .card-header,
+    .profile-card .card-body{
+      padding-left:18px;
+      padding-right:18px;
+    }
+
+    .history-item{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+  }
+</style>
+
+<div class="profile-shell">
+
+  <!-- Hero -->
+  <div class="profile-hero">
+    <div class="profile-main">
+      <div class="profile-avatar" id="profile-avatar">D</div>
+
+      <div class="profile-copy">
+        <div class="profile-kicker">
+          <i class="fa fa-user-circle"></i>
+          Verified Donor Profile
+        </div>
+
+        <h2 class="profile-name" id="profile-name">Loading donor...</h2>
+
+        <div class="profile-sub">
+          <span><i class="fa fa-map-marker"></i> <span id="profile-location">Loading location</span></span>
+          <span><i class="fa fa-tint"></i> <span id="profile-blood-inline">Blood group loading</span></span>
+          <span><i class="fa fa-calendar"></i> Joined <span id="profile-joined">—</span></span>
+        </div>
+
+        <p class="profile-bio" id="profile-bio">
+          Loading donor profile and donation preferences...
+        </p>
+      </div>
+    </div>
+
+    <div class="profile-actions">
+      <div class="status-card">
+        <div class="status-label">Current Status</div>
+        <div class="status-pill unavailable" id="availability-pill">
+          <span class="status-dot"></span>
+          Checking availability
+        </div>
+
+        <div class="status-meta">
+          <div class="status-row">
+            <span>Last donation</span>
+            <strong id="last-donation-date">—</strong>
+          </div>
+          <div class="status-row">
+            <span>Next eligible</span>
+            <strong id="next-eligible-date">—</strong>
+          </div>
+          <div class="status-row">
+            <span>Total donations</span>
+            <strong id="hero-total-donations">—</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <a href="/donors/edit/" class="btn btn-primary">
+          <i class="fa fa-pencil"></i> Edit Profile
+        </a>
+        <a href="/requests/" class="btn btn-ghost">
+          <i class="fa fa-bolt"></i> View Requests
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="profile-grid">
+
+    <div class="profile-column">
+
+      <!-- Personal Info -->
+      <div class="profile-card card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <span class="title-dot"></span>
+            <span class="card-title">Personal Information</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Full Name</div>
+              <div class="info-value" id="info-full-name">—</div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Email Address</div>
+              <div class="info-value" id="info-email">—</div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Phone Number</div>
+              <div class="info-value" id="info-phone">—</div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Gender</div>
+              <div class="info-value" id="info-gender">—</div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Age</div>
+              <div class="info-value" id="info-age">—</div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Weight</div>
+              <div class="info-value" id="info-weight">—</div>
+            </div>
+
+            <div class="info-item" style="grid-column:span 2;">
+              <div class="info-label">Address</div>
+              <div class="info-value" id="info-address">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donation Summary -->
+      <div class="profile-card card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <span class="title-dot"></span>
+            <span class="card-title">Donation Summary</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="stats-row">
+            <div class="mini-stat">
+              <div class="mini-stat-value accent-red" id="stat-donations">—</div>
+              <div class="mini-stat-label">Total Donations</div>
+            </div>
+
+            <div class="mini-stat">
+              <div class="mini-stat-value accent-gold" id="stat-rating">—</div>
+              <div class="mini-stat-label">Community Rating</div>
+            </div>
+
+            <div class="mini-stat">
+              <div class="mini-stat-value accent-green" id="stat-saved">—</div>
+              <div class="mini-stat-label">Lives Impacted</div>
+            </div>
+
+            <div class="mini-stat">
+              <div class="mini-stat-value accent-blue" id="stat-requests">—</div>
+              <div class="mini-stat-label">Responses Made</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Availability -->
+      <div class="profile-card card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <span class="title-dot"></span>
+            <span class="card-title">Availability & Eligibility</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="availability-banner" id="availability-banner">
+            <div class="availability-icon">
+              <i class="fa fa-heartbeat"></i>
+            </div>
+            <div class="availability-text">
+              <h4 id="availability-title">Checking donor status</h4>
+              <p id="availability-message">We are loading your latest donation eligibility and availability details.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donation History -->
+      <div class="profile-card card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <span class="title-dot"></span>
+            <span class="card-title">Recent Donation History</span>
+          </div>
+          <a href="/donations/" class="btn btn-ghost btn-sm">View all <i class="fa fa-arrow-right"></i></a>
+        </div>
+
+        <div class="card-body">
+          <div class="history-list" id="donation-history">
+            <div style="text-align:center;padding:24px;">
+              <div class="spinner" style="margin:0 auto;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-stack">
+
+      <!-- Blood Type -->
+      <div class="profile-card card">
+        <div class="card-body blood-type-card">
+          <div class="blood-title">Blood Type</div>
+          <div class="blood-bubble" id="blood-bubble">—</div>
+          <div class="blood-value" id="blood-type-value">—</div>
+          <div class="blood-note" id="blood-type-note">Compatible donation details will appear here.</div>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div class="profile-card card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <span class="title-dot"></span>
+            <span class="card-title">Contact & Location</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="contact-list">
+            <div class="contact-item">
+              <div class="contact-icon"><i class="fa fa-phone"></i></div>
+              <div class="contact-copy">
+                <div class="label">Phone</div>
+                <div class="value" id="contact-phone">—</div>
+              </div>
+            </div>
+
+            <div class="contact-item">
+              <div class="contact-icon"><i class="fa fa-envelope"></i></div>
+              <div class="contact-copy">
+                <div class="label">Email</div>
+                <div class="value" id="contact-email">—</div>
+              </div>
+            </div>
+
+            <div class="contact-item">
+              <div class="contact-icon"><i class="fa fa-map-marker"></i></div>
+              <div class="contact-copy">
+                <div class="label">City / Address</div>
+                <div class="value" id="contact-location">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Emergency Contact -->
+      <div class="profile-card card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <span class="title-dot"></span>
+            <span class="card-title">Emergency Contact</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="info-grid" style="grid-template-columns:1fr;">
+            <div class="info-item">
+              <div class="info-label">Contact Name</div>
+              <div class="info-value" id="em-name">—</div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Relationship</div>
+              <div class="info-value" id="em-relation">—</div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">Contact Number</div>
+              <div class="info-value" id="em-phone">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const donor = currentUser || {};
+
+    setText('profile-avatar', getInitials(donor.fullName || 'Donor'));
+    setText('profile-name', donor.fullName || 'Unknown Donor');
+    setText('profile-location', donor.city || donor.address || 'Location unavailable');
+    setText('profile-blood-inline', formatBloodType(donor.bloodType) || 'Blood group unavailable');
+    setText('profile-joined', formatDate(donor.createdAt) || '—');
+    setText('profile-bio', donor.bio || 'Thank you for being part of the LifeLink donor community. Your profile helps connect urgent blood requests with eligible donors faster.');
+
+    setText('info-full-name', donor.fullName || '—');
+    setText('info-email', donor.email || '—');
+    setText('info-phone', donor.phone || donor.phoneNumber || '—');
+    setText('info-gender', donor.gender || '—');
+    setText('info-age', donor.age ? `${donor.age} years` : '—');
+    setText('info-weight', donor.weight ? `${donor.weight} kg` : '—');
+    setText('info-address', donor.address || donor.city || '—');
+
+    setText('contact-phone', donor.phone || donor.phoneNumber || '—');
+    setText('contact-email', donor.email || '—');
+    setText('contact-location', donor.address || donor.city || '—');
+
+    setText('em-name', donor.emergencyContactName || 'Not provided');
+    setText('em-relation', donor.emergencyContactRelation || 'Not provided');
+    setText('em-phone', donor.emergencyContactPhone || 'Not provided');
+
+    const bloodType = formatBloodType(donor.bloodType) || '—';
+    setText('blood-bubble', bloodType);
+    setText('blood-type-value', bloodType);
+    setText('blood-type-note', getBloodTypeNote(bloodType));
+
+    const donations = donor.totalDonations || 0;
+    const rating = donor.rating ? `${parseFloat(donor.rating).toFixed(1)} ★` : '—';
+    const livesImpacted = donor.livesImpacted || donor.totalLivesSaved || Math.max(donations, 0);
+    const responsesMade = donor.totalResponses || donor.responseCount || 0;
+
+    setText('hero-total-donations', donations);
+    setText('stat-donations', donations);
+    setText('stat-rating', rating);
+    setText('stat-saved', livesImpacted);
+    setText('stat-requests', responsesMade);
+
+    setText('last-donation-date', formatDate(donor.lastDonationDate) || 'No record');
+    setText('next-eligible-date', formatDate(donor.nextEligibleDate) || 'Ready now');
+
+    updateAvailability(donor);
+
+    await loadDonationHistory();
+  });
+
+  async function loadDonationHistory() {
+    const historyEl = document.getElementById('donation-history');
+
+    try {
+      let history = [];
+      try {
+        history = await api('donations/my-history');
+      } catch (e) {
+        history = [];
+      }
+
+      if (!Array.isArray(history) || !history.length) {
+        historyEl.innerHTML = `
+          <div class="empty-state">
+            <i class="fa fa-history"></i>
+            <h3>No donation history yet</h3>
+            <p>Your completed donations will appear here once they are recorded.</p>
+          </div>
+        `;
+        return;
+      }
+
+      historyEl.innerHTML = history.slice(0, 5).map(item => {
+        const status = (item.status || 'completed').toLowerCase();
+        const badgeClass =
+          status === 'completed' || status === 'fulfilled' ? 'success' :
+          status === 'pending' ? 'pending' : 'cancelled';
+
+        return `
+          <div class="history-item">
+            <div class="history-left">
+              <div class="history-title">${item.hospitalName || 'Donation Record'}</div>
+              <div class="history-meta">
+                ${formatDate(item.donationDate || item.createdAt) || 'Date unavailable'}
+                ${item.location ? ` · ${item.location}` : ''}
+                ${item.unitsDonated ? ` · ${item.unitsDonated} unit(s)` : ''}
+              </div>
+            </div>
+            <div class="history-badge ${badgeClass}">
+              <i class="fa fa-circle"></i>
+              ${capitalize(status)}
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      historyEl.innerHTML = `
+        <div class="empty-state">
+          <i class="fa fa-exclamation-circle"></i>
+          <h3>Could not load history</h3>
+          <p>Please refresh the page and try again.</p>
+        </div>
+      `;
+    }
+  }
+
+  function updateAvailability(user) {
+    const pill = document.getElementById('availability-pill');
+    const banner = document.getElementById('availability-banner');
+    const title = document.getElementById('availability-title');
+    const message = document.getElementById('availability-message');
+
+    const available = !!user.isAvailable;
+    const nextEligible = formatDate(user.nextEligibleDate);
+
+    pill.className = `status-pill ${available ? 'available' : 'unavailable'}`;
+    pill.innerHTML = `
+      <span class="status-dot"></span>
+      ${available ? 'Available for donation' : 'Currently unavailable'}
+    `;
+
+    banner.classList.toggle('green', available);
+
+    if (available) {
+      title.textContent = 'You are ready to help';
+      message.textContent = nextEligible
+        ? `You are visible for matching. Your next eligibility date is ${nextEligible}.`
+        : 'You are visible for matching and can respond to compatible requests.';
+    } else {
+      title.textContent = 'You are temporarily unavailable';
+      message.textContent = nextEligible
+        ? `You are not currently shown in active donor matching. Expected next eligibility: ${nextEligible}.`
+        : 'You are not currently shown in active donor matching. Update your profile when you are ready again.';
+    }
+  }
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function getInitials(name) {
+    return String(name)
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map(part => part[0]?.toUpperCase() || '')
+      .join('') || 'D';
+  }
+
+  function formatDate(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString();
+  }
+
+  function capitalize(value) {
+    if (!value) return '';
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
+
+  function getBloodTypeNote(type) {
+    const notes = {
+      'A+': 'Can donate to A+ and AB+ recipients.',
+      'A-': 'Can donate to A+, A-, AB+, and AB- recipients.',
+      'B+': 'Can donate to B+ and AB+ recipients.',
+      'B-': 'Can donate to B+, B-, AB+, and AB- recipients.',
+      'AB+': 'Can donate to AB+ recipients.',
+      'AB-': 'Can donate to AB+ and AB- recipients.',
+      'O+': 'Can donate to O+, A+, B+, and AB+ recipients.',
+      'O-': 'Universal red cell donor for all blood groups.'
+    };
+    return notes[type] || 'Keep your blood group details updated for accurate matching.';
+  }
+</script>
+{% endblock %}

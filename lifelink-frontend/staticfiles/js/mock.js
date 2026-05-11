@@ -1,0 +1,140 @@
+const sampleHospitals = [
+    {
+        id: 1,
+        name: "City General Hospital",
+        address: "123 Main Road, Andheri East, Mumbai",
+        city: "Mumbai",
+        phone: "+91 9876543210",
+        latitude: 19.1197,
+        longitude: 72.8468,
+        emergency: true,
+        bloodBankAvailable: true
+    },
+    {
+        id: 2,
+        name: "Lifecare Medical Center",
+        address: "45 MG Road, Thane West, Thane",
+        city: "Thane",
+        phone: "+91 9876500011",
+        latitude: 19.2183,
+        longitude: 72.9781,
+        emergency: true,
+        bloodBankAvailable: true
+    },
+    {
+        id: 3,
+        name: "Sunrise Multispeciality Hospital",
+        address: "77 Linking Road, Bandra West, Mumbai",
+        city: "Mumbai",
+        phone: "+91 9988776655",
+        latitude: 19.0596,
+        longitude: 72.8295,
+        emergency: false,
+        bloodBankAvailable: true
+    },
+    {
+        id: 4,
+        name: "Apollo Care Hospital",
+        address: "22 Palm Beach Road, Vashi, Navi Mumbai",
+        city: "Navi Mumbai",
+        phone: "+91 9123456780",
+        latitude: 19.0771,
+        longitude: 72.9986,
+        emergency: true,
+        bloodBankAvailable: false
+    },
+    {
+        id: 5,
+        name: "Hope Trauma Center",
+        address: "18 Central Avenue, Dadar, Mumbai",
+        city: "Mumbai",
+        phone: "+91 9000011111",
+        latitude: 19.0178,
+        longitude: 72.8478,
+        emergency: true,
+        bloodBankAvailable: true
+    }
+];
+
+const sampleBloodRequests = [
+    {
+        id: 101,
+        patientName: "Ramesh Patil",
+        bloodType: "APOSITIVE",
+        unitsNeeded: 2,
+        urgency: "URGENT",
+        hospitalId: 1,
+        hospitalName: "City General Hospital",
+        hospitalAddress: "123 Main Road, Andheri East, Mumbai",
+        contactPhone: "+91 9876543210",
+        description: "Accident case, surgery at 5 PM",
+        status: "OPEN",
+        createdAt: "2026-05-05T09:30:00",
+        latitude: 19.1197,
+        longitude: 72.8468
+    },
+    {
+        id: 102,
+        patientName: "Farah Khan",
+        bloodType: "ONEGATIVE",
+        unitsNeeded: 1,
+        urgency: "CRITICAL",
+        hospitalId: 5,
+        hospitalName: "Hope Trauma Center",
+        hospitalAddress: "18 Central Avenue, Dadar, Mumbai",
+        contactPhone: "+91 9000011111",
+        description: "ICU emergency, immediate transfusion needed",
+        status: "OPEN",
+        createdAt: "2026-05-05T10:15:00",
+        latitude: 19.0178,
+        longitude: 72.8478
+    },
+    {
+        id: 103,
+        patientName: "Anita Sharma",
+        bloodType: "BPOSITIVE",
+        unitsNeeded: 3,
+        urgency: "NORMAL",
+        hospitalId: 2,
+        hospitalName: "Lifecare Medical Center",
+        hospitalAddress: "45 MG Road, Thane West, Thane",
+        contactPhone: "+91 9876500011",
+        description: "Scheduled operation tomorrow morning",
+        status: "OPEN",
+        createdAt: "2026-05-05T08:20:00",
+        latitude: 19.2183,
+        longitude: 72.9781
+    },
+    {
+        id: 104,
+        patientName: "Joseph D'Souza",
+        bloodType: "ABNEGATIVE",
+        unitsNeeded: 2,
+        urgency: "URGENT",
+        hospitalId: 3,
+        hospitalName: "Sunrise Multispeciality Hospital",
+        hospitalAddress: "77 Linking Road, Bandra West, Mumbai",
+        contactPhone: "+91 9988776655",
+        description: "Rare blood type request for cardiac procedure",
+        status: "MATCHING",
+        createdAt: "2026-05-04T18:00:00",
+        latitude: 19.0596,
+        longitude: 72.8295
+    },
+    {
+        id: 105,
+        patientName: "Kavya Nair",
+        bloodType: "OPOSITIVE",
+        unitsNeeded: 1,
+        urgency: "CRITICAL",
+        hospitalId: 4,
+        hospitalName: "Apollo Care Hospital",
+        hospitalAddress: "22 Palm Beach Road, Vashi, Navi Mumbai",
+        contactPhone: "+91 9123456780",
+        description: "Post-delivery complication, urgent support needed",
+        status: "OPEN",
+        createdAt: "2026-05-05T11:05:00",
+        latitude: 19.0771,
+        longitude: 72.9986
+    }
+];
