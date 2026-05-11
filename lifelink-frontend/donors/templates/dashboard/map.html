@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+{% block title %}Live Map — LifeLink{% endblock %}
+{% block page_title %}Live Map{% endblock %}
+
+{% block extra_head %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+
+<style>
+  html, body {
+    height: 100%;
+  }
+
+  .page-content {
+    padding: 0 !important;
+    height: calc(100vh - 60px);
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  #map {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    min-height: 500px;
+    width: 100%;
+    z-index: 0;
+    background: var(--surface-2);
+  }
+
+  #map .leaflet-container,
+  .leaflet-container {
+    height: 100%;
+    width: 100%;
+  }
+
+  #fallback-map {
+    position: absolute;
+    inset: 0;
+    z-index: -1; /* behind Leaflet layers */
+    display: block;
+    overflow: hidden;
+    background:
+      linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px),
+      linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+      radial-gradient(circle at 50% 42%, rgba(41,121,255,0.18), transparent 45%),
+      var(--surface-2);
+    background-size: 64px 64px,64px 64px,auto,auto;
+  }
+
+  .fallback-title {
+    position: absolute;
+    top: 96px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text);
+    background: rgba(20,20,20,0.82);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 12px;
+    z-index: 3;
+  }
+
+  :root[data-theme="light"] .fallback-title {
+    background: rgba(255,255,255,0.9);
+  }
+
+  .fallback-marker {
+    position: absolute;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    border: 2px solid #fff;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.32);
+    cursor: pointer;
+  }
+
+  .fallback-marker.request { border-radius: 10px; color: #111; }
+  .fallback-marker.hospital { border-radius: 10px; background: #2979FF; }
+
+  .map-controls {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    gap: 10px;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-items: center;
+    padding: 12px;
+    background: rgba(20,20,20,0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: min(1080px, calc(100% - 32px));
+    max-width: calc(100% - 32px);
+  }
+
+  .filter-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn.active {
+    background: var(--crimson);
+    color: #fff;
+    border-color: var(--crimson);
+  }
+
+  .filter-btn:hover:not(.active) {
+    background: var(--surface-3);
+    color: var(--text);
+  }
+
+  .map-legend {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    background: rgba(20,20,20,0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    max-width: calc(100% - 32px);
+  }
+
+  .map-controls select.filter-btn,
+  .map-controls input.filter-btn {
+    height: 34px;
+    line-height: 34px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  @media (max-width: 1024px) {
+    .map-controls {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .map-controls {
+      top: 12px;
+      width: calc(100% - 20px);
+      max-width: calc(100% - 20px);
+      padding: 10px;
+      gap: 8px;
+    }
+    .filter-btn {
+      flex: 1 1 auto;
+      min-width: 110px;
+      text-align: center;
+    }
+    .map-controls select.filter-btn,
+    .map-controls input.filter-btn {
+      min-width: 92px;
+      max-width: 120px;
+      flex: 0 0 auto;
+    }
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .leaflet-popup-content-wrapper {
+    background: #1E1E1E !important;
+    border: 1px solid rgba(220,20,60,0.25) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+    color: #F5F5F5 !important;
+  }
+
+  .leaflet-popup-tip {
+    background: #1E1E1E !important;
+  }
+
+  .leaflet-popup-content {
+    margin: 14px 16px !important;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+  }
+
+  .popup-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .popup-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+    color: #888;
+  }
+
+  .popup-row span:last-child {
+    color: #F5F5F5;
+  }
+
+  .popup-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .popup-btn {
+    flex: 1;
+    padding: 8px;
+    border-radius: 8px;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .popup-btn-primary {
+    background: linear-gradient(135deg,#DC143C,#FF3358);
+    color: #fff;
+  }
+
+  .popup-btn-secondary {
+    background: #272727;
+    color: #F5F5F5;
+    border: 1px solid rgba(220,20,60,0.2);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="map-controls">
+  <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+  <button class="filter-btn" onclick="setFilter('donors', this)">🩸 Donors</button>
+  <button class="filter-btn" onclick="setFilter('requests', this)">🆘 Requests</button>
+  <button class="filter-btn" onclick="setFilter('hospitals', this)">🏥 Hospitals</button>
+
+  <select id="bt-filter" class="filter-btn" onchange="applyBloodFilter()" style="appearance:none;min-width:80px;">
+    <option value="">All Types</option>
+    <option value="A_POSITIVE">A+</option>
+    <option value="A_NEGATIVE">A-</option>
+    <option value="B_POSITIVE">B+</option>
+    <option value="B_NEGATIVE">B-</option>
+    <option value="AB_POSITIVE">AB+</option>
+    <option value="AB_NEGATIVE">AB-</option>
+    <option value="O_POSITIVE">O+</option>
+    <option value="O_NEGATIVE">O-</option>
+  </select>
+
+  <input
+    type="number"
+    id="radius-filter"
+    class="filter-btn"
+    value="10"
+    min="1"
+    max="50"
+    style="width:80px;"
+    placeholder="Radius km"
+    onchange="reloadData()"
+  />
+
+  <button class="filter-btn" onclick="centerOnMe()" style="color:var(--crimson-l);">
+    📍 My Location
+  </button>
+</div>
+
+<div id="map">
+  <div id="fallback-map">
+    <div class="fallback-title">
+      Live marker map - donors, requests, and hospitals from the database
+    </div>
+  </div>
+</div>
+
+<div class="map-legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#DC143C;box-shadow:0 0 6px #DC143C;"></div>Available Donor</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#888;"></div>Unavailable</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FFB700;box-shadow:0 0 6px #FFB700;"></div>Urgent Request</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#FF3358;box-shadow:0 0 10px #FF3358;"></div>Critical Request</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#00E676;"></div>Normal Request</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2979FF;border-radius:4px;"></div>Hospital</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'js/map.js' %}?v=3.4"></script>
+{% endblock %}

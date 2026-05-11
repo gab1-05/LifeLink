@@ -1,0 +1,831 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — LifeLink{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<style>
+  .dashboard-shell{
+    display:grid;
+    gap:24px;
+  }
+
+  .welcome-banner{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    flex-wrap:wrap;
+    padding:28px 30px;
+    background:
+      radial-gradient(circle at top right, rgba(220,20,60,0.12), transparent 32%),
+      linear-gradient(180deg, var(--surface), var(--surface-2));
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    overflow:hidden;
+  }
+
+  .welcome-banner::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(90deg, rgba(220,20,60,0.04), transparent 40%, rgba(255,255,255,0.02));
+    pointer-events:none;
+  }
+
+  .wb-left{
+    position:relative;
+    z-index:1;
+  }
+
+  .wb-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:12px;
+    padding:6px 10px;
+    border-radius:999px;
+    background:rgba(220,20,60,0.10);
+    border:1px solid rgba(220,20,60,0.18);
+    color:var(--crimson-l);
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+
+  .wb-left h2{
+    margin:0 0 8px;
+    font-size:28px;
+    line-height:1.15;
+    font-weight:800;
+    color:var(--text);
+  }
+
+  .wb-left p{
+    margin:0;
+    font-size:14px;
+    line-height:1.6;
+    color:var(--text-muted);
+    max-width:600px;
+  }
+
+  .wb-status{
+    position:relative;
+    z-index:1;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 16px;
+    min-height:52px;
+    border-radius:14px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    box-shadow:0 10px 24px rgba(0,0,0,0.14);
+  }
+
+  .wb-status-icon{
+    width:36px;
+    height:36px;
+    border-radius:10px;
+    display:grid;
+    place-items:center;
+    background:rgba(220,20,60,0.12);
+    color:var(--crimson-l);
+    font-size:15px;
+    flex-shrink:0;
+  }
+
+  .wb-status-text{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+
+  .wb-status-text strong{
+    font-size:13px;
+    color:var(--text);
+  }
+
+  .wb-status-text span{
+    font-size:12px;
+    color:var(--text-muted);
+  }
+
+  .stats-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:20px;
+  }
+
+  .stat-card{
+    position:relative;
+    background:linear-gradient(180deg, var(--surface), var(--surface-2));
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    overflow:hidden;
+    transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+  }
+
+  .stat-card::before{
+    content:'';
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    height:3px;
+    background:linear-gradient(90deg, var(--card-accent), transparent 72%);
+  }
+
+  .stat-card:hover{
+    transform:translateY(-3px);
+    border-color:rgba(220,20,60,0.26);
+    box-shadow:0 14px 28px rgba(0,0,0,0.18);
+  }
+
+  .stat-card.red{ --card-accent: var(--crimson); }
+  .stat-card.green{ --card-accent: var(--green); }
+  .stat-card.gold{ --card-accent: var(--gold); }
+  .stat-card.blue{ --card-accent: var(--blue); }
+
+  .stat-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .stat-copy{
+    min-width:0;
+  }
+
+  .stat-label{
+    margin:0 0 8px;
+    font-size:12px;
+    color:var(--text-muted);
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+
+  .stat-num{
+    font-size:34px;
+    line-height:1;
+    font-weight:800;
+    color:var(--text);
+    letter-spacing:-0.03em;
+  }
+
+  .stat-sub{
+    margin:6px 0 0;
+    font-size:13px;
+    color:var(--text-muted);
+  }
+
+  .stat-icon{
+    width:46px;
+    height:46px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    font-size:18px;
+    flex-shrink:0;
+    border:1px solid transparent;
+    background:var(--surface);
+  }
+
+  .stat-icon.red{
+    color:var(--crimson-l);
+    background:rgba(220,20,60,0.10);
+    border-color:rgba(220,20,60,0.18);
+  }
+
+  .stat-icon.green{
+    color:var(--green);
+    background:rgba(0,230,118,0.09);
+    border-color:rgba(0,230,118,0.18);
+  }
+
+  .stat-icon.gold{
+    color:var(--gold);
+    background:rgba(255,183,0,0.09);
+    border-color:rgba(255,183,0,0.18);
+  }
+
+  .stat-icon.blue{
+    color:#7CB7FF;
+    background:rgba(41,121,255,0.10);
+    border-color:rgba(41,121,255,0.18);
+  }
+
+  .dashboard-main{
+    display:grid;
+    grid-template-columns:minmax(0, 1.5fr) minmax(320px, 1fr);
+    gap:24px;
+  }
+
+  .dashboard-card{
+    background:linear-gradient(180deg, var(--surface), var(--surface-2));
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    overflow:hidden;
+  }
+
+  .dashboard-card .card-header{
+    padding:20px 24px;
+    border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,0.01);
+  }
+
+  .dashboard-card .card-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:15px;
+    font-weight:700;
+    color:var(--text);
+  }
+
+  .title-dot{
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:var(--crimson);
+    box-shadow:0 0 0 4px rgba(220,20,60,0.12);
+    flex-shrink:0;
+  }
+
+  .dashboard-card .card-body{
+    padding:0 24px;
+  }
+
+  .request-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:16px 0;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+    transition:background .2s ease, padding .2s ease, border-color .2s ease;
+    cursor:pointer;
+    border-radius:12px;
+  }
+
+  .request-row:last-child{
+    border-bottom:none;
+  }
+
+  .request-row:hover{
+    background:rgba(255,255,255,0.02);
+    padding-left:10px;
+    padding-right:10px;
+    border-color:transparent;
+  }
+
+  .req-info{
+    flex:1;
+    min-width:0;
+  }
+
+  .req-hospital{
+    font-size:14px;
+    font-weight:700;
+    color:var(--text);
+    margin-bottom:4px;
+  }
+
+  .req-meta{
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+
+  .donor-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 0;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+  }
+
+  .donor-row:last-child{
+    border-bottom:none;
+  }
+
+  .d-avatar{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    font-size:14px;
+    font-weight:800;
+    color:#fff;
+    flex-shrink:0;
+    background:linear-gradient(135deg, var(--crimson), #8A2BE2);
+    box-shadow:0 8px 18px rgba(220,20,60,0.18);
+  }
+
+  .donor-info{
+    flex:1;
+    min-width:0;
+  }
+
+  .d-name{
+    font-size:13px;
+    font-weight:700;
+    color:var(--text);
+    margin-bottom:3px;
+  }
+
+  .d-meta{
+    font-size:12px;
+    color:var(--text-muted);
+  }
+
+  .available-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:700;
+    white-space:nowrap;
+    border:1px solid var(--border);
+  }
+
+  .available-pill.yes{
+    background:rgba(0,230,118,0.10);
+    color:var(--green);
+    border-color:rgba(0,230,118,0.24);
+  }
+
+  .available-pill.no{
+    background:rgba(255,255,255,0.04);
+    color:var(--text-muted);
+    border-color:rgba(255,255,255,0.08);
+  }
+
+  .dot{
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    flex-shrink:0;
+  }
+
+  .dot.green{
+    background:var(--green);
+    box-shadow:0 0 6px rgba(0,230,118,0.55);
+  }
+
+  .dot.gray{
+    background:#8B93A7;
+  }
+
+  .activity-card{
+    background:linear-gradient(180deg, var(--surface), var(--surface-2));
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    overflow:hidden;
+  }
+
+  .activity-card .card-header{
+    padding:20px 24px;
+    border-bottom:1px solid var(--border);
+  }
+
+  .activity-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:18px;
+  }
+
+  .activity-tile{
+    padding:20px 16px;
+    background:var(--surface-2);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:14px;
+    text-align:center;
+    transition:transform .2s ease, border-color .2s ease;
+  }
+
+  .activity-tile:hover{
+    transform:translateY(-2px);
+    border-color:rgba(220,20,60,0.20);
+  }
+
+  .activity-value{
+    font-size:26px;
+    line-height:1.1;
+    font-weight:800;
+    color:var(--text);
+    letter-spacing:-0.02em;
+    word-break:break-word;
+  }
+
+  .activity-value.accent-red{ color:var(--crimson-l); }
+  .activity-value.accent-gold{ color:var(--gold); }
+  .activity-value.accent-green{ color:var(--green); }
+  .activity-value.accent-purple{ color:#D7A8FF; }
+
+  .activity-label{
+    margin-top:6px;
+    font-size:12px;
+    color:var(--text-muted);
+    font-weight:600;
+  }
+
+  .empty-state{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    gap:10px;
+    padding:38px 18px;
+    color:var(--text-muted);
+  }
+
+  .empty-state i{
+    font-size:22px;
+    color:var(--crimson-l);
+  }
+
+  .empty-state h3{
+    font-size:15px;
+    color:var(--text);
+    margin:0;
+  }
+
+  .empty-state p{
+    margin:0;
+    font-size:13px;
+    color:var(--text-muted);
+  }
+
+  @media (max-width: 1100px){
+    .stats-grid{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+
+    .dashboard-main{
+      grid-template-columns:1fr;
+    }
+
+    .activity-grid{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 640px){
+    .welcome-banner{
+      padding:22px 18px;
+    }
+
+    .wb-left h2{
+      font-size:22px;
+    }
+
+    .stats-grid,
+    .activity-grid{
+      grid-template-columns:1fr;
+    }
+
+    .dashboard-card .card-header,
+    .activity-card .card-header{
+      padding:18px;
+    }
+
+    .dashboard-card .card-body{
+      padding:0 18px;
+    }
+
+    .wb-status{
+      width:100%;
+    }
+  }
+</style>
+
+<div class="dashboard-shell">
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner">
+    <div class="wb-left">
+      <div class="wb-kicker">
+        <i class="fa fa-heartbeat"></i>
+        LifeLink Overview
+      </div>
+      <h2 id="welcome-title">Welcome back!</h2>
+      <p id="welcome-sub">Loading your dashboard...</p>
+    </div>
+
+    <div class="wb-status">
+      <div class="wb-status-icon">
+        <i class="fa fa-tint"></i>
+      </div>
+      <div class="wb-status-text">
+        <strong>Donor readiness</strong>
+        <span id="donor-readiness-text">Checking your status...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card red">
+      <div class="stat-top">
+        <div class="stat-copy">
+          <div class="stat-label">Total Donors</div>
+          <div class="stat-num" id="st-donors">—</div>
+          <div class="stat-sub">Registered across the network</div>
+        </div>
+        <div class="stat-icon red">
+          <i class="fa fa-users"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card green">
+      <div class="stat-top">
+        <div class="stat-copy">
+          <div class="stat-label">Available Now</div>
+          <div class="stat-num" id="st-available">—</div>
+          <div class="stat-sub">Currently ready to donate</div>
+        </div>
+        <div class="stat-icon green">
+          <i class="fa fa-check-circle"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card gold">
+      <div class="stat-top">
+        <div class="stat-copy">
+          <div class="stat-label">Open Requests</div>
+          <div class="stat-num" id="st-open">—</div>
+          <div class="stat-sub">Active blood requirements</div>
+        </div>
+        <div class="stat-icon gold">
+          <i class="fa fa-bolt"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card blue">
+      <div class="stat-top">
+        <div class="stat-copy">
+          <div class="stat-label">Lives Saved</div>
+          <div class="stat-num" id="st-fulfilled">—</div>
+          <div class="stat-sub">Fulfilled donation requests</div>
+        </div>
+        <div class="stat-icon blue">
+          <i class="fa fa-heart"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="dashboard-main">
+
+    <!-- Live Blood Requests -->
+    <div class="dashboard-card card">
+      <div class="card-header">
+        <span class="card-title">
+          <span class="title-dot"></span>
+          Live Blood Requests
+        </span>
+        <a href="/requests/" class="btn btn-ghost btn-sm">View all <i class="fa fa-arrow-right"></i></a>
+      </div>
+      <div class="card-body" id="live-requests">
+        <div style="text-align:center;padding:40px;">
+          <div class="spinner" style="margin:0 auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nearby Donors -->
+    <div class="dashboard-card card">
+      <div class="card-header">
+        <span class="card-title">
+          <span class="title-dot"></span>
+          Nearby Donors
+        </span>
+        <a href="/donors/" class="btn btn-ghost btn-sm">All <i class="fa fa-arrow-right"></i></a>
+      </div>
+      <div class="card-body" id="nearby-donors">
+        <div style="text-align:center;padding:40px;">
+          <div class="spinner" style="margin:0 auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Activity -->
+  <div class="activity-card card">
+    <div class="card-header">
+      <span class="card-title">
+        <span class="title-dot"></span>
+        My Activity
+      </span>
+    </div>
+    <div class="card-body" style="padding:20px 24px;">
+      <div class="activity-grid" id="my-activity">
+        <div class="activity-tile">
+          <div class="activity-value accent-red" id="my-donations">—</div>
+          <div class="activity-label">My Donations</div>
+        </div>
+        <div class="activity-tile">
+          <div class="activity-value accent-gold" id="my-rating">—</div>
+          <div class="activity-label">My Rating</div>
+        </div>
+        <div class="activity-tile">
+          <div class="activity-value accent-green" id="my-next">—</div>
+          <div class="activity-label">Next Eligible</div>
+        </div>
+        <div class="activity-tile">
+          <div class="activity-value accent-purple" id="my-blood">—</div>
+          <div class="activity-label">Blood Type</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Feed -->
+  <div class="dashboard-card card">
+    <div class="card-header">
+      <span class="card-title">
+        <span class="title-dot" style="background:var(--green); box-shadow:0 0 0 4px rgba(0,230,118,0.12);"></span>
+        Live Activity Feed
+      </span>
+    </div>
+    <div class="card-body" id="live-feed" style="padding:10px 24px;">
+        <div style="text-align:center;padding:30px;"><div class="spinner" style="margin:0 auto;"></div></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const welcomeTitle = document.getElementById('welcome-title');
+    const welcomeSub = document.getElementById('welcome-sub');
+    const readinessText = document.getElementById('donor-readiness-text');
+
+    if (currentUser) {
+      const firstName = currentUser.fullName?.split(' ')[0] || 'there';
+      welcomeTitle.textContent = `Welcome back, ${firstName}!`;
+
+      if (currentUser.isAvailable) {
+        welcomeSub.textContent = 'You are currently marked available and visible for matching.';
+        readinessText.textContent = 'You can receive compatible donation requests.';
+      } else {
+        welcomeSub.textContent = 'You are currently unavailable. Switch your donor status on when you are ready to help.';
+        readinessText.textContent = 'Your profile is temporarily hidden from active matching.';
+      }
+
+      document.getElementById('my-donations').textContent = currentUser.totalDonations || 0;
+      document.getElementById('my-rating').textContent = currentUser.rating
+        ? `${parseFloat(currentUser.rating).toFixed(1)} ★`
+        : '—';
+      document.getElementById('my-blood').textContent = formatBloodType(currentUser.bloodType) || '—';
+    }
+
+    try {
+      const stats = await api('requests/stats');
+      animNum('st-donors', stats.totalDonors || 0);
+      animNum('st-available', stats.availableDonors || 0);
+      animNum('st-open', stats.openRequests || 0);
+      animNum('st-fulfilled', stats.fulfilledRequests || 0);
+    } catch (e) {}
+
+    try {
+      const requests = await api('requests');
+      const el = document.getElementById('live-requests');
+
+      if (!requests.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <i class="fa fa-check-circle"></i>
+            <h3>No open requests</h3>
+            <p>There are no urgent blood requests at the moment.</p>
+          </div>
+        `;
+      } else {
+        el.innerHTML = requests.slice(0, 5).map(r => `
+          <div class="request-row" onclick="window.location='/requests/'">
+            <span class="blood-badge ${bloodTypeClass(r.bloodType)}">${formatBloodType(r.bloodType)}</span>
+            <div class="req-info">
+              <div class="req-hospital">${r.hospitalName || 'Unknown Hospital'}</div>
+              <div class="req-meta">${r.hospitalAddress || 'Address unavailable'} · ${r.unitsNeeded || 1} unit(s)</div>
+            </div>
+            <span class="blood-badge urgency-${r.urgency}">${r.urgency}</span>
+          </div>
+        `).join('');
+      }
+    } catch (e) {
+      document.getElementById('live-requests').innerHTML = `
+        <div class="empty-state">
+          <i class="fa fa-exclamation-circle"></i>
+          <h3>Could not load requests</h3>
+          <p>Please refresh the page and try again.</p>
+        </div>
+      `;
+    }
+
+    try {
+      let url = 'users/donors';
+      if (currentLat && currentLng && currentUser?.bloodType) {
+        url += `?lat=${currentLat}&lng=${currentLng}&bloodType=${currentUser.bloodType}&radius=50`;
+      }
+
+      const donors = await api(url);
+      const el = document.getElementById('nearby-donors');
+
+      if (!donors.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <i class="fa fa-user-circle-o"></i>
+            <h3>No donors found</h3>
+            <p>Try expanding your search radius or checking again later.</p>
+          </div>
+        `;
+      } else {
+        el.innerHTML = donors.slice(0, 5).map(d => `
+          <div class="donor-row">
+            <div class="d-avatar">${(d.fullName || '?')[0].toUpperCase()}</div>
+            <div class="donor-info">
+              <div class="d-name">${d.fullName || 'Unknown Donor'}</div>
+              <div class="d-meta">${d.city || 'Unknown city'}</div>
+            </div>
+            <span class="blood-badge ${bloodTypeClass(d.bloodType)}">${formatBloodType(d.bloodType)}</span>
+            <div class="available-pill ${d.isAvailable ? 'yes' : 'no'}">
+              <div class="dot ${d.isAvailable ? 'green' : 'gray'}"></div>
+              ${d.isAvailable ? 'Available' : 'Busy'}
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch (e) {
+      document.getElementById('nearby-donors').innerHTML = `
+        <div class="empty-state">
+          <i class="fa fa-exclamation-circle"></i>
+          <h3>Could not load donors</h3>
+          <p>Please refresh the page and try again.</p>
+        </div>
+      `;
+    }
+
+    if (currentUser?.nextEligibleDate) {
+      const d = new Date(currentUser.nextEligibleDate);
+      document.getElementById('my-next').textContent = d.toLocaleDateString();
+    } else {
+      document.getElementById('my-next').textContent = 'Ready';
+    }
+
+    // Load Live Feed
+    try {
+        const feed = await api('live-feed');
+        const feedEl = document.getElementById('live-feed');
+        feedEl.innerHTML = feed.map(item => `
+            <div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <div style="font-size:20px;">${item.icon}</div>
+                <div style="flex:1;">
+                    <div style="font-size:13px; color:var(--text);">${item.text}</div>
+                    <div style="font-size:11px; color:var(--text-muted);">${item.time}</div>
+                </div>
+            </div>
+        `).join('') || '<div class="empty-state">No recent activity</div>';
+    } catch (e) {
+        document.getElementById('live-feed').innerHTML = '<div class="empty-state">Failed to load feed</div>';
+    }
+  });
+
+  function animNum(id, target) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    let current = 0;
+    const duration = 900;
+    const frames = 30;
+    const increment = target / frames;
+    const stepTime = Math.max(20, Math.floor(duration / frames));
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) {
+        el.textContent = Number(target).toLocaleString();
+        clearInterval(timer);
+      } else {
+        el.textContent = Math.floor(current).toLocaleString();
+      }
+    }, stepTime);
+  }
+</script>
+{% endblock %}
