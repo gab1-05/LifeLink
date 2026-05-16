@@ -802,14 +802,18 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRFToken': getCsrf()
+          'X-CSRFToken': getCsrf(),
         },
         credentials: 'same-origin',
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       const raw = await res.text();
       let data = {};
-      try { data = raw ? JSON.parse(raw) : {}; } catch {}
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { error: 'Server error. Please try again.' };
+      }
 
       if (res.ok) {
         window.location.href = data.redirect || '/dashboard/';
