@@ -9,7 +9,7 @@
   .chat-sidebar{width:300px;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
   .chat-sidebar-header{padding:16px 20px;border-bottom:1px solid var(--border);}
   .chat-list{flex:1;overflow-y:auto;}
-  .chat-item{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;transition:background 0.2s;border-bottom:1px solid rgba(255,255,255,0.03);}
+  .chat-item{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;transition:background 0.2s;border-bottom:1px solid var(--soft-border);}
   .chat-item:hover,.chat-item.active{background:var(--surface-2);}
   .chat-item.active{border-right:2px solid var(--crimson);}
   .ci-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--crimson),#7B00FF);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0;}
@@ -36,6 +36,10 @@
   .date-sep{text-align:center;font-size:11px;color:var(--text-muted);padding:8px 0;}
   .ds-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background 0.2s;}
   .ds-item:hover{background:var(--surface-2);}
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:6px;}
+  ::-webkit-scrollbar-track{background:var(--surface);}
+  ::-webkit-scrollbar-thumb{background:var(--crimson);border-radius:3px;}
 </style>
 {% endblock %}
 

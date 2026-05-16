@@ -43,8 +43,8 @@
     display: block;
     overflow: hidden;
     background:
-      linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px),
-      linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, var(--soft-border) 1px, transparent 1px),
+      linear-gradient(var(--soft-border) 1px, transparent 1px),
       radial-gradient(circle at 50% 42%, rgba(41,121,255,0.18), transparent 45%),
       var(--surface-2);
     background-size: 64px 64px,64px 64px,auto,auto;
@@ -56,16 +56,12 @@
     left: 50%;
     transform: translateX(-50%);
     color: var(--text);
-    background: rgba(20,20,20,0.82);
+    background: var(--panel-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 10px 14px;
     font-size: 12px;
     z-index: 3;
-  }
-
-  :root[data-theme="light"] .fallback-title {
-    background: rgba(255,255,255,0.9);
   }
 
   .fallback-marker {
@@ -100,7 +96,7 @@
     justify-content: center;
     align-items: center;
     padding: 12px;
-    background: rgba(20,20,20,0.92);
+    background: var(--panel-bg);
     backdrop-filter: blur(12px);
     border: 1px solid var(--border);
     border-radius: 14px;
@@ -137,7 +133,7 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
-    background: rgba(20,20,20,0.92);
+    background: var(--panel-bg);
     backdrop-filter: blur(12px);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -199,15 +195,15 @@
   }
 
   .leaflet-popup-content-wrapper {
-    background: #1E1E1E !important;
-    border: 1px solid rgba(220,20,60,0.25) !important;
+    background: var(--surface-2) !important;
+    border: 1px solid var(--border) !important;
     border-radius: 12px !important;
     box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
-    color: #F5F5F5 !important;
+    color: var(--text) !important;
   }
 
   .leaflet-popup-tip {
-    background: #1E1E1E !important;
+    background: var(--surface-2) !important;
   }
 
   .leaflet-popup-content {
@@ -228,11 +224,11 @@
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 4px;
-    color: #888;
+    color: var(--text-muted);
   }
 
   .popup-row span:last-child {
-    color: #F5F5F5;
+    color: var(--text);
   }
 
   .popup-actions {
@@ -258,9 +254,9 @@
   }
 
   .popup-btn-secondary {
-    background: #272727;
-    color: #F5F5F5;
-    border: 1px solid rgba(220,20,60,0.2);
+    background: var(--surface-3);
+    color: var(--text);
+    border: 1px solid var(--border);
   }
 </style>
 {% endblock %}

@@ -12,14 +12,20 @@
   <style>
     :root {
       --crimson:#DC143C; --crimson-l:#FF3358; --bg:#0D0D0D;
-      --surface:#141414; --border:rgba(220,20,60,0.18);
+      --surface:#141414; --surface-2:#1E1E1E; --surface-3:#272727; --border:rgba(220,20,60,0.18);
+      --soft-border:rgba(255,255,255,0.12); --soft-bg:rgba(255,255,255,0.05); --soft-bg-hover:rgba(255,255,255,0.1);
       --text:#F5F5F5; --text-muted:#888;
       --green:#00E676; --gold:#FFB700;
     }
     :root[data-theme="light"] {
       --bg:#F7F8FB;
       --surface:#FFFFFF;
+      --surface-2:#F0F3F8;
+      --surface-3:#E4E9F1;
       --border:rgba(150,40,60,0.18);
+      --soft-border:rgba(23,32,42,0.12);
+      --soft-bg:rgba(23,32,42,0.04);
+      --soft-bg-hover:rgba(23,32,42,0.08);
       --text:#17202A;
       --text-muted:#647083;
       --green:#008A4E;
@@ -27,6 +33,11 @@
     }
     *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
     body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); overflow-x:hidden; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:var(--surface); }
+    ::-webkit-scrollbar-thumb { background:var(--crimson); border-radius:3px; }
 
     /* ── BG EFFECTS ── */
     .bg-glow {
@@ -82,7 +93,7 @@
       font-family:'DM Sans',sans-serif;
     }
     .btn-nav-ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
-    .btn-nav-ghost:hover { background:rgba(255,255,255,0.05); }
+    .btn-nav-ghost:hover { background:var(--soft-bg); }
     .btn-nav-primary { background:linear-gradient(135deg,var(--crimson),var(--crimson-l)); color:#fff; box-shadow:0 4px 16px rgba(220,20,60,0.35); }
     .btn-nav-primary:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(220,20,60,0.5); }
 
@@ -147,10 +158,10 @@
     }
     .btn-hero-primary:hover { transform:translateY(-2px); box-shadow:0 10px 36px rgba(220,20,60,0.6); }
     .btn-hero-secondary {
-      background:rgba(255,255,255,0.05); color:var(--text);
-      border:1px solid rgba(255,255,255,0.12); backdrop-filter:blur(8px);
+      background:var(--soft-bg); color:var(--text);
+      border:1px solid var(--soft-border); backdrop-filter:blur(8px);
     }
-    .btn-hero-secondary:hover { background:rgba(255,255,255,0.1); }
+    .btn-hero-secondary:hover { background:var(--soft-bg-hover); }
 
     @keyframes fadeInUp {
       from { opacity:0; transform:translateY(24px); }
@@ -281,7 +292,7 @@
     <a href="#stats">Impact</a>
   </div>
   <div class="nav-cta">
-    <button class="theme-btn" type="button" onclick="toggleThemeMode()" title="Toggle light mode">
+    <button class="theme-btn" type="button" onclick="toggleThemeMode()" title="Toggle theme" aria-label="Toggle theme">
       <i class="fa fa-sun"></i><i class="fa fa-moon"></i>
     </button>
     <a href="/login/" class="btn-nav btn-nav-ghost">Sign In</a>
@@ -417,10 +428,10 @@
 <footer>
   <div style="display:flex;align-items:center;gap:10px;">
     <span style="font-size:20px;">🩸</span>
-    <span style="font-family:'Syne',sans-serif;font-weight:700;color:#fff;">LifeLink</span>
-    <span>— Every second counts.</span>
+    <span style="font-family:'Syne',sans-serif;font-weight:700;color:var(--text);">LifeLink</span>
+    <span>— Every second counts. —</span>
   </div>
-  <div>© 2024 LifeLink. Built with ❤️ to save lives.</div>
+  <div>© 2026 LifeLink. Built with ❤️ to save lives.</div>
 </footer>
 
 <script>
