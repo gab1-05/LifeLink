@@ -934,19 +934,37 @@ def api_fulfill_request(request, request_id):
         return JsonResponse({"error": "Request not found"}, status=404)
 
 @login_required
-@csrf_exempt
+@csrf_protect
+@require_http_methods(["POST", "PATCH"])
 def api_rate_user(request, user_id):
-    from .models import DonorProfile
-    if request.method not in ["PATCH", "POST"]:
-        return JsonResponse({"error": "Method not allowed"}, status=405)
+    from .models import DonorProfile, UserRating
+    if request.user.id == user_id:
+        return JsonResponse({"error": "You cannot rate yourself."}, status=403)
+
     data, err = parse_json_body(request)
-    if err: return err
+    if err:
+        return err
+
     rating = max(1, min(5, int(data.get("rating") or 5)))
     try:
         donor = DonorProfile.objects.get(user_id=user_id)
     except DonorProfile.DoesNotExist:
         return JsonResponse({"error": "Donor not found"}, status=404)
+
+    existing = UserRating.objects.filter(rater=request.user, rated_user_id=user_id).first()
+    if existing:
+        return JsonResponse({
+            "error": "You have already rated this user. You can only submit one rating.",
+            "rating": donor_rating(donor),
+            "ratingCount": donor.rating_count,
+        }, status=400)
+
+    UserRating.objects.create(rater=request.user, rated_user_id=user_id, rating=rating)
     donor.rating_total += rating
     donor.rating_count += 1
     donor.save(update_fields=["rating_total", "rating_count"])
-    return JsonResponse({"success": True, "rating": donor_rating(donor), "ratingCount": donor.rating_count})
+    return JsonResponse({
+        "success": True,
+        "rating": donor_rating(donor),
+        "ratingCount": donor.rating_count,
+    })
