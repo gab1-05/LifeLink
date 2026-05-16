@@ -1,0 +1,404 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  citecolor=black
+}
+
+\onehalfspacing
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\Large}
+  {Chapter \thechapter}
+  {8pt}
+  {\LARGE}
+
+\begin{document}
+
+% -------------------- Title Page --------------------
+\begin{titlepage}
+\begin{center}
+{\Large \textbf{UNIVERSITY OF MUMBAI}}\\[8pt]
+{\large \textbf{DON BOSCO INSTITUTE OF TECHNOLOGY}}\\
+Department of Information Technology\\[16pt]
+
+{\LARGE \textbf{LIFELINK: A REAL-TIME WEB-BASED BLOOD DONOR NETWORK}}\\[16pt]
+{\large \textbf{A PROJECT REPORT}}\\[10pt]
+Submitted in partial fulfillment of the requirements\\
+for the award of the degree of\\
+\textbf{Bachelor of Engineering (B.E.)}\\
+in\\
+\textbf{Information Technology}\\[14pt]
+
+Submitted by\\[4pt]
+\textbf{GABRIEL PEREIRA (45)}\\
+\textbf{HAZEL SANCTIS (52)}\\
+\textbf{DHERAZLIN JEBISHA (12)}\\
+\textbf{ROSHELL MIRANDA (34)}\\[12pt]
+
+Under the guidance of\\
+\textbf{Prof. TAYYABALI SAYYED}\\[16pt]
+
+Academic Year 2025--2026
+\end{center}
+\end{titlepage}
+
+% -------------------- Certificate --------------------
+\chapter*{CERTIFICATE}
+\addcontentsline{toc}{chapter}{CERTIFICATE}
+This is to certify that the project report entitled \textbf{``LifeLink: A Real-Time Web-Based Blood Donor Network''} submitted by the above group to the University of Mumbai in partial fulfillment of the requirements for the award of the degree of Bachelor of Engineering in Information Technology is a bonafide record of work carried out under supervision.
+
+The work presented in this report reflects analysis, design, implementation, and testing of a full-stack web platform for donor discovery, request management, messaging, notifications, and map-based visualization.
+
+\vspace{20pt}
+\textbf{Internal Guide:} Prof. Tayyabali Sayyed\\
+\textbf{Head of Department:} Prof. Dr. Sunantha Guruswamy\\
+\textbf{Principal:} Dr. Sudhakar Mande\\
+Department of Information Technology, Don Bosco Institute of Technology, Mumbai
+
+% -------------------- Declaration --------------------
+\chapter*{DECLARATION}
+\addcontentsline{toc}{chapter}{DECLARATION}
+We hereby declare that the project work entitled \textbf{``LifeLink: A Real-Time Web-Based Blood Donor Network''} submitted in partial fulfillment of the requirements for the award of the degree of Bachelor of Engineering in Information Technology is our original work.
+
+We further declare that:
+\begin{itemize}[leftmargin=1.5em]
+\item The work has not been submitted previously, in part or full, for any other degree or diploma.
+\item All references and sources used have been acknowledged.
+\item The work does not knowingly violate copyright or legal constraints.
+\end{itemize}
+
+% -------------------- Acknowledgement --------------------
+\chapter*{ACKNOWLEDGEMENTS}
+\addcontentsline{toc}{chapter}{ACKNOWLEDGEMENTS}
+We express sincere gratitude to our project guide and department faculty for their guidance, support, and technical feedback throughout this project. We also thank our peers for their help during testing and review cycles, and our families for their encouragement and support.
+
+% -------------------- Abstract --------------------
+\chapter*{ABSTRACT}
+\addcontentsline{toc}{chapter}{ABSTRACT}
+Timely blood availability remains a critical healthcare challenge, especially during emergencies where manual coordination delays response. This project presents \textbf{LifeLink}, a web-based real-time donor network that connects donors, patients, and hospitals through a single platform.
+
+The implemented system provides user registration/login, donor profile and availability management, blood request posting, donor discovery, request response workflows, location-aware map visualization, in-platform messaging, and notification delivery. The backend is implemented using \textbf{Django 4.2} with relational persistence and JSON APIs. The frontend uses responsive template-driven pages with JavaScript modules for dashboard, requests, maps, profile, and chat workflows. Location support is provided using geospatial coordinates and OpenStreetMap tile rendering.
+
+The project demonstrates a practical, deployable architecture for emergency donor coordination with support for email notifications, profile-level communication preferences, and operational dashboards. This report documents the full lifecycle: problem analysis, system design, implementation choices, test strategy, observed limitations, and future improvements.
+
+% -------------------- TOC --------------------
+\tableofcontents
+\clearpage
+
+% ==================== Chapter 1 ====================
+\chapter{Introduction}
+\section{Background and Motivation}
+Blood donation coordination in many settings still depends on fragmented records, phone calls, and ad hoc messaging. In urgent scenarios this increases response latency and operational uncertainty. LifeLink addresses this by centralizing donor discovery and request handling on a live, map-enabled web platform.
+
+\section{Problem Statement}
+Existing workflows struggle with:
+\begin{itemize}[leftmargin=1.5em]
+\item Slow identification of compatible, available donors.
+\item Poor visibility into ongoing requests and donor responses.
+\item Limited real-time communication between requesters and donors.
+\item Inconsistent use of location information for emergency matching.
+\end{itemize}
+
+\section{Objectives}
+The project objectives are:
+\begin{itemize}[leftmargin=1.5em]
+\item Build a role-aware platform for donors, hospitals, and patients.
+\item Enable structured blood requests with urgency, units, and location.
+\item Provide donor discovery and live map visualization.
+\item Support response flow, request fulfillment, and donation tracking.
+\item Integrate messaging, notifications, and optional email alerts.
+\end{itemize}
+
+\section{Scope of the Project}
+Current scope includes web-first workflows, backend APIs, template-rendered frontend modules, donor/request mapping, and operational profile management. Mobile-native apps, advanced analytics, and external blood bank integrations are outside present scope.
+
+\section{Existing System and Limitations}
+Manual systems are hard to scale and audit. They typically lack structured urgency metadata, donor availability state, unified communication channels, and data-backed monitoring.
+
+\section{Proposed System}
+LifeLink introduces a unified architecture with:
+\begin{itemize}[leftmargin=1.5em]
+\item Profile-driven donor registry and availability toggles.
+\item API-based request creation and donor discovery.
+\item Live map controls with blood-type and radius filtering.
+\item In-app messaging and unread counters.
+\item Notification center plus SMTP-based email notification flow.
+\end{itemize}
+
+\section{Organisation of the Report}
+Chapter 2 covers related systems, Chapter 3 presents analysis and requirements, Chapter 4 details system design, Chapter 5 explains implementation/testing, and Chapter 6 presents conclusions and future scope.
+
+% ==================== Chapter 2 ====================
+\chapter{Literature Survey}
+\section{Introduction}
+This chapter positions LifeLink among digital blood coordination systems, emergency response applications, and real-time location-aware platforms.
+
+\section{Blood Donation Management Systems}
+Most legacy systems focus on donor record storage but offer limited emergency routing logic and weak requester-donor communication.
+
+\section{Web-Based Blood Management Platforms}
+Web platforms improve accessibility, but many implementations remain transaction-oriented (request posting only) without closed-loop response and fulfillment tracking.
+
+\section{Progressive and Real-Time Features}
+Modern systems increasingly include live notifications, presence status, and geospatial search. These features reduce decision time and improve match relevance.
+
+\section{Gap Identification}
+Common gaps observed in prior systems:
+\begin{itemize}[leftmargin=1.5em]
+\item No integrated messaging between requester and donor.
+\item Weak support for live availability and fulfillment lifecycle.
+\item Incomplete map-based decision support for nearby matching.
+\item Low personalization of notification preferences.
+\end{itemize}
+
+\section{Summary}
+LifeLink is designed to close these gaps using structured APIs, role-sensitive workflows, and map-driven interaction.
+
+% ==================== Chapter 3 ====================
+\chapter{System Analysis}
+\section{Introduction}
+System analysis was performed on user roles, emergency workflows, data entities, and operational constraints.
+
+\section{Problem Analysis}
+Emergency blood requests require quick compatibility checks, nearby donor visibility, and immediate outreach. Without automation, response times rise and coordination quality drops.
+
+\section{Feasibility Study}
+\subsection{Technical Feasibility}
+The stack (Django, relational DB, JavaScript frontend, Leaflet/OpenStreetMap, SMTP email) is mature and deployable.
+
+\subsection{Operational Feasibility}
+Users can interact through browser-based pages with low setup overhead. Hospital and donor workflows are straightforward.
+
+\subsection{Economic Feasibility}
+Core runtime uses open-source components and low-cost infrastructure options.
+
+\section{User Types and Roles}
+\begin{itemize}[leftmargin=1.5em]
+\item \textbf{Donor}: Manage profile, availability, and response to requests.
+\item \textbf{Hospital/Requester}: Create and monitor blood requests.
+\item \textbf{Patient}: Participate in request workflows as requester role.
+\end{itemize}
+
+\section{Functional Requirements}
+\begin{itemize}[leftmargin=1.5em]
+\item User registration, login, logout.
+\item Donor profile CRUD fields (blood type, location, availability).
+\item Request posting, listing, filtering, responding, fulfilling.
+\item Donor listing by blood type, radius, and availability.
+\item Messaging conversations and unread tracking.
+\item Notification feed and read/read-all operations.
+\item Email test and request-related email notifications.
+\end{itemize}
+
+\section{Non-Functional Requirements}
+\begin{itemize}[leftmargin=1.5em]
+\item Responsive UI for desktop/mobile browsers.
+\item Secure session and CSRF handling.
+\item Reasonable API response times for dashboard operations.
+\item Operational logging and debuggability for notification flows.
+\end{itemize}
+
+\section{Use Case Overview}
+Primary use cases include ``Post Request'', ``Find Donors'', ``Respond to Request'', ``Message Counterpart'', and ``Mark Request Fulfilled''.
+
+\section{Data Flow Overview}
+Frontend pages call `/api/*` endpoints, backend views execute business logic, models persist state in database tables, and notifications are emitted to in-app feed plus email channel where enabled.
+
+\section{Summary}
+The analysis confirms that a web-first, API-centric architecture is sufficient for the required workflows.
+
+% ==================== Chapter 4 ====================
+\chapter{System Design}
+\section{Introduction}
+This chapter describes architecture, module boundaries, data model, API design, and UI composition.
+
+\section{Overall Architecture}
+LifeLink follows a layered web architecture:
+\begin{enumerate}[leftmargin=1.5em]
+\item Presentation layer: Django templates + JavaScript.
+\item Application layer: Django view functions and helper logic.
+\item Data layer: relational models in `donors/models.py`.
+\item Notification layer: in-app notifications + SMTP email.
+\end{enumerate}
+
+\section{Module Design}
+\subsection{Authentication and User Management}
+Implements login, registration, role/profile bootstrap, and session management.
+
+\subsection{Donor Management}
+Tracks blood type, coordinates, availability, donation totals, and rating aggregates.
+
+\subsection{Request Management}
+Handles request creation, status transitions (`pending`, `matched`, `completed`), and ownership flows.
+
+\subsection{Matching and Notification}
+Filters compatible available donors and creates both notification records and email alerts.
+
+\subsection{Messaging}
+Supports conversations, unread counts, and message persistence between users.
+
+\subsection{Map and Geospatial}
+Displays donors, requests, and hospitals with map filters (blood type, radius, entity type).
+
+\section{Database Design}
+Core entities:
+\begin{itemize}[leftmargin=1.5em]
+\item `UserProfile`, `DonorProfile`, `HospitalProfile`
+\item `BloodRequest`, `DonorMatch`, `DonationHistory`
+\item `Message`, `Notification`
+\end{itemize}
+
+Relational links:
+\begin{itemize}[leftmargin=1.5em]
+\item One-to-one user profile variants.
+\item One-to-many hospital to blood requests.
+\item Many donor-to-request associations through `DonorMatch`.
+\end{itemize}
+
+\section{User Interface Design}
+Major screens:
+\begin{itemize}[leftmargin=1.5em]
+\item Dashboard
+\item Requests page
+\item Live map page
+\item Messages page
+\item Profile page
+\end{itemize}
+
+\section{API Design}
+Representative API groups:
+\begin{itemize}[leftmargin=1.5em]
+\item Auth: `/api/login/`, `/api/register/`
+\item Requests: `/api/requests/`, `/api/requests/my/`, respond/fulfill endpoints
+\item Users: `/api/users/me/`, `/api/users/donors/`, toggle availability
+\item Messaging/Notifications: conversation, unread counters, read state
+\item Utility: `/api/test-email/`
+\end{itemize}
+
+\section{Summary}
+The design is modular and aligns with emergency coordination tasks while remaining maintainable in a single Django app structure.
+
+% ==================== Chapter 5 ====================
+\chapter{Implementation and Testing}
+\section{Introduction}
+This chapter documents the implemented stack, code organization, and test observations.
+
+\section{Technology Stack}
+\begin{itemize}[leftmargin=1.5em]
+\item Backend: Django 4.2, Python
+\item Database: SQLite/MySQL (environment-driven)
+\item Frontend: HTML, CSS, JavaScript templates
+\item Mapping: Leaflet + OpenStreetMap tiles
+\item Messaging/Realtime dependencies present: Channels, Daphne, Redis client libraries
+\item Security/Integration: CSRF/session handling, Google OAuth (social auth)
+\end{itemize}
+
+\section{Development Environment}
+Project runs via `manage.py runserver` with environment variables in `.env`. Static handling uses WhiteNoise and template-based rendering.
+
+\section{Backend Implementation}
+Business logic is implemented in `donors/views.py` with helper mappers for blood type/urgency/state conversions and JSON response shaping.
+
+\section{Frontend Implementation}
+UI modules under `donors/templates/dashboard` provide map, request, profile, donor listing, and messaging interactions, with a common base shell.
+
+\section{Notification and Email Implementation}
+In-app notifications are stored in the `Notification` model. SMTP email delivery is configured through environment-based settings (`EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, TLS/SSL flags).
+
+\section{Testing Strategy}
+\subsection{Manual Functional Testing}
+Flows validated:
+\begin{itemize}[leftmargin=1.5em]
+\item Registration/login and redirect handling
+\item Profile save and availability toggle
+\item Request create/respond/fulfill sequences
+\item Notification counts and read state updates
+\item Email test endpoint and SMTP diagnostics
+\end{itemize}
+
+\subsection{System Checks}
+Django `manage.py check` is used repeatedly after feature changes to validate configuration consistency.
+
+\section{Results}
+The system successfully supports core donor-request workflows, map exploration, profile/location updates, and operational notifications. Recent iterations improved email diagnostics, profile map usability, and map control alignment.
+
+\section{Summary}
+Implementation demonstrates functional completeness for a web MVP with clear extension points for production-hardening.
+
+% ==================== Chapter 6 ====================
+\chapter{Conclusion and Future Scope}
+\section{Conclusion}
+LifeLink provides an integrated emergency blood coordination platform combining donor discovery, request management, messaging, and map-based situational awareness in one web system.
+
+\section{Achievements of the Project}
+\begin{itemize}[leftmargin=1.5em]
+\item End-to-end request lifecycle from creation to fulfillment.
+\item Unified donor and hospital profile ecosystem.
+\item Real-time-like operational UX via frequent refresh, unread counts, and notifications.
+\item Email notification support with runtime diagnostics.
+\item Practical geospatial workflows across request and profile flows.
+\end{itemize}
+
+\section{Limitations}
+\begin{itemize}[leftmargin=1.5em]
+\item Limited automated test suite coverage in repository.
+\item Distance computations use simplified planar approximation.
+\item WebSocket path exists in architecture but is not fully active in current runtime flow.
+\item Role governance and advanced moderation workflows are minimal.
+\end{itemize}
+
+\section{Future Scope}
+\begin{itemize}[leftmargin=1.5em]
+\item Activate robust real-time channels (WebSockets) end-to-end.
+\item Add comprehensive unit/integration test suites and CI validation.
+\item Introduce geospatial indexing and accurate distance engines.
+\item Add admin analytics dashboards and abuse/quality controls.
+\item Provide mobile app clients and external registry integrations.
+\end{itemize}
+
+\section{Final Remarks}
+The project establishes a strong foundation for real-world emergency blood coordination and is well-positioned for iterative enhancement into a production-grade civic-health platform.
+
+% -------------------- Bibliography --------------------
+\begin{thebibliography}{9}
+\bibitem{django}
+Django Software Foundation, \textit{Django Documentation}. Available: \url{https://docs.djangoproject.com/}
+
+\bibitem{leaflet}
+Leaflet Team, \textit{Leaflet: JavaScript Library for Interactive Maps}. Available: \url{https://leafletjs.com/}
+
+\bibitem{osm}
+OpenStreetMap Contributors, \textit{OpenStreetMap}. Available: \url{https://www.openstreetmap.org/}
+
+\bibitem{channels}
+Django Channels Contributors, \textit{Channels Documentation}. Available: \url{https://channels.readthedocs.io/}
+
+\bibitem{who}
+World Health Organization, \textit{Blood Safety and Availability}. Available: \url{https://www.who.int/}
+\end{thebibliography}
+
+\end{document}
+
