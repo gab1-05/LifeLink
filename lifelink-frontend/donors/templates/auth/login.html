@@ -391,7 +391,7 @@
       <div class="form-group">
         <label for="password">
           Password
-          <a href="/forgot-password/" class="forgot">Forgot password?</a>
+          <a href="{% url 'password_reset' %}" class="forgot">Forgot password?</a>
         </label>
         <div class="input-wrap">
           <i class="fa fa-lock"></i>
@@ -446,16 +446,22 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRFToken': getCsrf()
+          'X-CSRFToken': getCsrf(),
         },
         credentials: 'same-origin',
         body: JSON.stringify({
           email: document.getElementById('email').value,
-          password: document.getElementById('password').value
-        })
+          password: document.getElementById('password').value,
+        }),
       });
 
-      const data = await res.json();
+      const raw = await res.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { error: 'Server error. Please try again.' };
+      }
 
       if (res.ok) {
         localStorage.setItem('lifelink_post_login_msg', 'Thank you for logging in.');

@@ -3,11 +3,15 @@ import random
 import math
 import logging
 import os
+import hmac
+import hashlib
+import secrets
 from datetime import datetime
 from datetime import date, timedelta
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.utils import timezone
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.db.models import Q
@@ -208,6 +212,12 @@ def login_page(request):
         return redirect("dashboard")
     return render(request, "auth/login.html")
 
+@ensure_csrf_cookie
+def forgot_password_page(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+    return render(request, "auth/forgot_password.html")
+
 def register_page(request):
     if request.user.is_authenticated:
         return redirect("dashboard")
@@ -254,34 +264,68 @@ def logout_view(request):
     return redirect("login")
 
 # API ENDPOINTS
-@csrf_exempt
+@csrf_protect
+@require_http_methods(["POST"])
 def api_login(request):
-    if request.method == "POST":
-        data, err = parse_json_body(request)
-        if err: return err
-        identifier = data.get("username") or data.get("email")
-        username = resolve_login_username(identifier)
-        password = data.get("password")
-        user = authenticate(request, username=username, password=password)
-        if user:
-            login(request, user)
-            return JsonResponse({
-                "success": True, 
-                "redirect": "/dashboard/",
-                "user": build_user_data(user)
-            })
-        exists = User.objects.filter(
-            Q(username__iexact=(identifier or "").strip()) | Q(email__iexact=(identifier or "").strip())
-        ).exists()
-        if not exists:
-            return JsonResponse(
-                {"error": "No account was found for that username or email. If this was created before the sample reseed, please register it again."},
-                status=404,
-            )
-        return JsonResponse({"error": "Password is incorrect for that account."}, status=401)
-    return JsonResponse({"error": "Method not allowed"}, status=405)
+    data, err = parse_json_body(request)
+    if err:
+        return err
 
-@csrf_exempt
+    identifier = data.get("username") or data.get("email")
+    username = resolve_login_username(identifier)
+    password = data.get("password")
+    now = timezone.now()
+
+    maybe_user = User.objects.filter(
+        Q(username__iexact=(identifier or "").strip()) | Q(email__iexact=(identifier or "").strip())
+    ).first()
+
+    if maybe_user:
+        from .models import UserProfile
+        profile = UserProfile.objects.filter(user=maybe_user).first()
+        if profile and profile.lockout_until and profile.lockout_until > now:
+            return JsonResponse(
+                {"error": "This account is temporarily locked. Please try again later."},
+                status=403,
+            )
+
+    user = authenticate(request, username=username, password=password)
+    if user:
+        login(request, user)
+        from .models import UserProfile
+        profile = UserProfile.objects.filter(user=user).first()
+        if profile and (profile.failed_login_attempts or profile.lockout_until):
+            profile.failed_login_attempts = 0
+            profile.lockout_until = None
+            profile.save(update_fields=["failed_login_attempts", "lockout_until"])
+        return JsonResponse({
+            "success": True,
+            "redirect": "/dashboard/",
+            "user": build_user_data(user),
+        })
+
+    if maybe_user:
+        from .models import UserProfile
+        profile = UserProfile.objects.filter(user=maybe_user).first()
+        if profile:
+            profile.failed_login_attempts += 1
+            if profile.failed_login_attempts >= 5:
+                profile.lockout_until = now + timedelta(minutes=15)
+                profile.failed_login_attempts = 0
+            profile.save(update_fields=["failed_login_attempts", "lockout_until"])
+
+    exists = User.objects.filter(
+        Q(username__iexact=(identifier or "").strip()) | Q(email__iexact=(identifier or "").strip())
+    ).exists()
+    if not exists:
+        return JsonResponse(
+            {"error": "No account was found for that username or email. If this was created before the sample reseed, please register it again."},
+            status=404,
+        )
+    return JsonResponse({"error": "Password is incorrect for that account."}, status=401)
+
+@csrf_protect
+@require_http_methods(["POST"])
 def api_register(request):
     if request.method == "POST":
         data, err = parse_json_body(request)
@@ -328,6 +372,101 @@ def api_register(request):
             "user": build_user_data(user)
         })
     return JsonResponse({"error": "Method not allowed"}, status=405)
+
+@csrf_protect
+@require_http_methods(["POST"])
+def api_send_password_reset_otp(request):
+    data, err = parse_json_body(request)
+    if err:
+        return err
+
+    email = (data.get("email") or "").strip()
+    if not email:
+        return JsonResponse({"error": "Please provide your email address."}, status=400)
+
+    user = User.objects.filter(email__iexact=email).first()
+    if user:
+        from .models import PasswordResetOTP
+        now = timezone.now()
+        recent_window = now - timedelta(hours=1)
+        recent_count = PasswordResetOTP.objects.filter(user=user, created_at__gte=recent_window).count()
+        if recent_count >= 5:
+            return JsonResponse({"error": "Too many recovery requests. Please try again later."}, status=429)
+
+        otp = "".join(secrets.choice("0123456789") for _ in range(6))
+        PasswordResetOTP.objects.create(
+            user=user,
+            otp_hash=hashlib.sha256(otp.encode("utf-8")).hexdigest(),
+            expires_at=now + timedelta(minutes=15),
+        )
+        try:
+            send_mail(
+                "LifeLink password recovery code",
+                f"Your recovery code is: {otp}\n\nThis code expires in 15 minutes.",
+                getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@lifelink.local"),
+                [user.email],
+                fail_silently=False,
+            )
+        except Exception:
+            logger.exception("Failed to send password reset OTP for user %s", user.id)
+
+    return JsonResponse({
+        "success": True,
+        "message": "If an account exists for that email, a recovery code has been sent.",
+    })
+
+@csrf_protect
+@require_http_methods(["POST"])
+def api_reset_password_with_otp(request):
+    data, err = parse_json_body(request)
+    if err:
+        return err
+
+    email = (data.get("email") or "").strip()
+    otp = (data.get("otp") or "").strip()
+    password = data.get("password") or ""
+    confirm_password = data.get("confirmPassword") or ""
+
+    if not email or not otp or not password or not confirm_password:
+        return JsonResponse({"error": "Email, code, and both password fields are required."}, status=400)
+    if password != confirm_password:
+        return JsonResponse({"error": "Passwords do not match."}, status=400)
+    if len(password) < 8:
+        return JsonResponse({"error": "Password must be at least 8 characters long."}, status=400)
+
+    user = User.objects.filter(email__iexact=email).first()
+    if not user:
+        return JsonResponse({"error": "Invalid recovery code or email."}, status=400)
+
+    from .models import PasswordResetOTP
+    otp_entry = PasswordResetOTP.objects.filter(
+        user=user,
+        is_used=False,
+        expires_at__gte=timezone.now(),
+    ).order_by("-created_at").first()
+
+    if not otp_entry:
+        return JsonResponse({"error": "Invalid or expired recovery code."}, status=400)
+
+    if otp_entry.attempt_count >= 5:
+        otp_entry.is_used = True
+        otp_entry.save(update_fields=["is_used"])
+        return JsonResponse({"error": "This recovery code is locked due to too many incorrect attempts."}, status=403)
+
+    otp_hash = hashlib.sha256(otp.encode("utf-8")).hexdigest()
+    if not hmac.compare_digest(otp_hash, otp_entry.otp_hash):
+        otp_entry.attempt_count += 1
+        if otp_entry.attempt_count >= 5:
+            otp_entry.is_used = True
+        otp_entry.save(update_fields=["attempt_count", "is_used"])
+        return JsonResponse({"error": "Invalid or expired recovery code."}, status=400)
+
+    otp_entry.is_used = True
+    otp_entry.save(update_fields=["is_used"])
+    user.set_password(password)
+    user.save()
+
+    return JsonResponse({"success": True, "message": "Password has been reset successfully."})
 
 def api_requests_stats(request):
     from .models import DonorProfile, BloodRequest

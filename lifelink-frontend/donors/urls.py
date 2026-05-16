@@ -1,4 +1,5 @@
-from django.urls import path
+from django.urls import path, reverse_lazy
+from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
@@ -8,6 +9,39 @@ urlpatterns = [
     path("login/", views.login_page, name="login"),
     path("register/", views.register_page, name="register"),
     path("logout/", views.logout_view, name="logout"),
+    path("forgot-password/", views.forgot_password_page, name="forgot_password"),
+    path(
+        "password-reset/",
+        auth_views.PasswordResetView.as_view(
+            template_name="auth/password_reset_form.html",
+            email_template_name="auth/password_reset_email.html",
+            subject_template_name="auth/password_reset_subject.txt",
+            success_url=reverse_lazy("password_reset_done"),
+        ),
+        name="password_reset",
+    ),
+    path(
+        "password-reset/done/",
+        auth_views.PasswordResetDoneView.as_view(
+            template_name="auth/password_reset_done.html"
+        ),
+        name="password_reset_done",
+    ),
+    path(
+        "password-reset/confirm/<uidb64>/<token>/",
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name="auth/password_reset_confirm.html",
+            success_url=reverse_lazy("password_reset_complete"),
+        ),
+        name="password_reset_confirm",
+    ),
+    path(
+        "password-reset/complete/",
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name="auth/password_reset_complete.html"
+        ),
+        name="password_reset_complete",
+    ),
 
     # Dashboard pages
     path("dashboard/", views.dashboard, name="dashboard"),
@@ -20,6 +54,8 @@ urlpatterns = [
     # API endpoints
     path("api/login/", views.api_login, name="api_login"),
     path("api/register/", views.api_register, name="api_register"),
+    path("api/forgot-password/send-otp/", views.api_send_password_reset_otp, name="api_send_password_reset_otp"),
+    path("api/forgot-password/reset/", views.api_reset_password_with_otp, name="api_reset_password_with_otp"),
     path("api/requests/stats/", views.api_requests_stats, name="api_requests_stats"),
     path("api/requests/my/", views.api_requests_my, name="api_requests_my"),
     path("api/requests/", views.api_requests, name="api_requests"),

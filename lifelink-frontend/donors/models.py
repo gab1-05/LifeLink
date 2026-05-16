@@ -1,6 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
+import hashlib
+import json
 import logging
+import secrets
+from django.utils import timezone
 
 
 BLOOD_TYPE_CHOICES = (
@@ -41,6 +45,8 @@ class UserProfile(models.Model):
     user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES)
     email_notifications = models.BooleanField(default=True)
     is_verified = models.BooleanField(default=False)
+    failed_login_attempts = models.PositiveSmallIntegerField(default=0)
+    lockout_until = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -223,8 +229,29 @@ class DonationHistory(models.Model):
     def __str__(self):
         return f"Donation - {self.donor.user.get_full_name()}"
 
+class PasswordResetOTP(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    otp_hash = models.CharField(max_length=64)
+    is_used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "password_reset_otps"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "otp_hash"]),
+            models.Index(fields=["expires_at"]),
+        ]
+
+    def __str__(self):
+        return f"Password reset OTP for {self.user.username} ({'used' if self.is_used else 'pending'})"
+
+    def is_valid(self):
+        return not self.is_used and self.expires_at >= timezone.now()
+
 from datetime import timedelta
-from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_in
@@ -307,13 +334,23 @@ def send_login_alert(sender, request, user, **kwargs):
         notification_type="alert",
     )
 
-    if user.email:
+    recipient = user.email
+    if not recipient and request is not None:
+        try:
+            payload = json.loads(request.body.decode("utf-8") or "{}")
+            candidate = payload.get("email") or payload.get("username")
+            if candidate and "@" in candidate:
+                recipient = candidate
+        except (ValueError, UnicodeDecodeError):
+            recipient = recipient
+
+    if recipient:
         try:
             send_mail(
                 "LifeLink login alert",
                 f"Thank you for logging in to LifeLink.\n\nTime: {login_time}\nIP Address: {client_ip}",
                 getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@lifelink.local"),
-                [user.email],
+                [recipient],
                 fail_silently=False,
             )
         except Exception:
