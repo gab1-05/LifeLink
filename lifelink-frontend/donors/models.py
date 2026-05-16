@@ -91,6 +91,26 @@ class DonorProfile(models.Model):
         return f"{self.user.get_full_name()} - {self.blood_type}"
 
 
+class UserRating(models.Model):
+    rater = models.ForeignKey(User, on_delete=models.CASCADE, related_name="given_ratings")
+    rated_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_ratings")
+    rating = models.PositiveSmallIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "user_ratings"
+        constraints = [
+            models.UniqueConstraint(fields=["rater", "rated_user"], name="unique_user_rating"),
+        ]
+        indexes = [
+            models.Index(fields=["rater", "rated_user"]),
+        ]
+
+    def __str__(self):
+        return f"Rating {self.rating} from {self.rater.username} to {self.rated_user.username}"
+
+
 class HospitalProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     hospital_name = models.CharField(max_length=150)
