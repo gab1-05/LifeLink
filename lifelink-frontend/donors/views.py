@@ -66,8 +66,13 @@ def status_to_frontend(value):
     }
     return mapped.get(value, "OPEN")
 
-def request_to_json(r):
+def request_to_json(r, viewer=None):
     owner = r.created_by or r.hospital.user
+    viewer_id = getattr(viewer, "id", None)
+    owner_ids = {r.hospital.user_id}
+    if r.created_by_id:
+        owner_ids.add(r.created_by_id)
+    can_manage = bool(viewer_id and viewer_id in owner_ids)
     return {
         "id": r.id,
         "hospitalName": r.hospital.hospital_name,
@@ -81,6 +86,11 @@ def request_to_json(r):
         "status": status_to_frontend(r.status),
         "createdAt": r.created_at.isoformat() if r.created_at else None,
         "description": "",
+        "canManage": can_manage,
+        "canFulfill": can_manage and r.status in ["pending", "matched"],
+        "canDelete": can_manage and r.status in ["pending", "matched"],
+        "createdById": r.created_by_id,
+        "hospitalUserId": r.hospital.user_id,
         "patient": {
             "id": owner.id if owner else None,
             "fullName": owner.get_full_name() or owner.username if owner else r.patient_name,
@@ -501,7 +511,7 @@ def api_requests(request):
             if lat and lng and r.latitude and r.longitude:
                 d = math.sqrt((float(r.latitude) - float(lat))**2 + (float(r.longitude) - float(lng))**2) * 111
                 if d > radius: continue
-            data.append(request_to_json(r))
+            data.append(request_to_json(r, request.user))
         return JsonResponse(data, safe=False)
     if request.method == "POST":
         data, err = parse_json_body(request)
@@ -684,9 +694,18 @@ def api_delete_request(request, request_id):
     if request.method not in ["DELETE", "POST"]:
         return JsonResponse({"error": "Method not allowed"}, status=405)
     from .models import BloodRequest
-    deleted, _ = BloodRequest.objects.filter(id=request_id, created_by=request.user, status__in=["pending", "matched"]).delete()
-    if not deleted:
-        return JsonResponse({"error": "Request not found or cannot be deleted"}, status=404)
+    try:
+        req = BloodRequest.objects.select_related("hospital").get(id=request_id)
+    except BloodRequest.DoesNotExist:
+        return JsonResponse({"error": "Request not found."}, status=404)
+
+    is_owner = req.created_by_id == request.user.id or req.hospital.user_id == request.user.id
+    if not is_owner:
+        return JsonResponse({"error": "You can only delete your own request."}, status=403)
+    if req.status not in ["pending", "matched"]:
+        return JsonResponse({"error": "Only open or matched requests can be deleted."}, status=400)
+
+    req.delete()
     return JsonResponse({"success": True, "message": "Blood request deleted."})
 
 @login_required
@@ -794,7 +813,7 @@ def api_requests_my(request):
     reqs = BloodRequest.objects.filter(
         Q(created_by=request.user) | Q(donormatch__donor__user=request.user)
     ).distinct().select_related("hospital", "created_by", "hospital__user")
-    data = [request_to_json(r) for r in reqs]
+    data = [request_to_json(r, request.user) for r in reqs]
     return JsonResponse(data, safe=False)
 
 @login_required
@@ -902,6 +921,12 @@ def api_fulfill_request(request, request_id):
         req = BloodRequest.objects.get(id=request_id)
         if req.created_by_id and req.created_by_id != request.user.id and req.hospital.user_id != request.user.id:
             return JsonResponse({"error": "You can only fulfill your own request"}, status=403)
+        if not req.created_by_id and req.hospital.user_id != request.user.id:
+            return JsonResponse({"error": "You can only fulfill your own request"}, status=403)
+        if req.status == "completed":
+            return JsonResponse({"error": "This request is already fulfilled."}, status=400)
+        if req.status == "cancelled":
+            return JsonResponse({"error": "Cancelled requests cannot be fulfilled."}, status=400)
         req.status = "completed"
         req.save(update_fields=["status"])
         recipients = {req.hospital.user_id}

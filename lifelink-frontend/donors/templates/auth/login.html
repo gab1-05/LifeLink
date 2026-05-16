@@ -30,6 +30,7 @@
       --surface:#141414;
       --surface-2:#1E1E1E;
       --border:rgba(220,20,60,0.18);
+      --soft-border:rgba(255,255,255,0.15);
       --text:#F5F5F5;
       --text-muted:#888;
       --green:#00E676;
@@ -40,6 +41,7 @@
       --surface:#FFFFFF;
       --surface-2:#F0F3F8;
       --border:rgba(150,40,60,0.18);
+      --soft-border:rgba(23,32,42,0.12);
       --text:#17202A;
       --text-muted:#647083;
       --green:#008A4E;
@@ -250,7 +252,7 @@
 
     .btn-oauth:hover{
       background:var(--surface);
-      border-color:rgba(255,255,255,0.15);
+      border-color:var(--soft-border);
     }
 
     .divider{
@@ -337,12 +339,19 @@
       background:var(--surface);
       color:var(--text);
       cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
+
+    .theme-toggle .fa-moon { display:none; }
+    :root[data-theme="light"] .theme-toggle .fa-sun { display:none; }
+    :root[data-theme="light"] .theme-toggle .fa-moon { display:inline-block; }
   </style>
 </head>
 <body>
-<button class="theme-toggle" type="button" onclick="toggleTheme()" title="Toggle light mode">
-  <i class="fa fa-sun"></i>
+<button class="theme-toggle" type="button" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
+  <i class="fa fa-sun"></i><i class="fa fa-moon"></i>
 </button>
 <div class="bg-orb orb1"></div>
 <div class="bg-orb orb2"></div>

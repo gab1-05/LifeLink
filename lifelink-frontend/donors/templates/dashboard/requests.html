@@ -16,7 +16,20 @@
   .req-details{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;}
   .req-detail{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);}
   .req-detail i{width:14px;color:var(--crimson);font-size:12px;}
-  .req-actions{display:flex;gap:8px;}
+  .req-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .req-card.is-updating{opacity:.62;pointer-events:none;}
+  .req-action-note{font-size:12px;color:var(--text-muted);padding:8px 0;}
+  .req-status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid var(--border);white-space:nowrap;}
+  .req-status-pill.OPEN{color:var(--green);background:rgba(0,230,118,0.10);border-color:rgba(0,230,118,0.24);}
+  .req-status-pill.MATCHED{color:var(--gold);background:rgba(255,183,0,0.10);border-color:rgba(255,183,0,0.24);}
+  .req-status-pill.FULFILLED{color:var(--green);background:rgba(0,230,118,0.10);border-color:rgba(0,230,118,0.24);}
+  .req-status-pill.CANCELLED{color:var(--text-muted);background:var(--soft-bg);border-color:var(--soft-border);}
+  .btn-danger{background:rgba(220,20,60,0.10);color:var(--crimson-l);border:1px solid rgba(220,20,60,0.28);}
+  .btn-danger:hover{background:rgba(220,20,60,0.18);color:var(--crimson-l);}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none !important;}
+  .confirm-copy{font-size:14px;color:var(--text-muted);line-height:1.6;}
+  .confirm-summary{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);}
+  .confirm-summary strong{display:block;color:var(--text);font-size:13px;margin-bottom:4px;}
   .tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;}
   .tab{padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-muted);transition:all 0.2s;border:none;background:none;}
   .tab.active{background:var(--crimson);color:#fff;box-shadow:0 2px 8px rgba(220,20,60,0.4);}
@@ -47,11 +60,33 @@
   <div style="grid-column:1/-1;text-align:center;padding:60px;"><div class="spinner" style="margin:0 auto;"></div></div>
 </div>
 
+<div class="modal" id="request-action-modal">
+  <div class="overlay" onclick="closeRequestActionModal()" style="position:fixed;inset:0;z-index:-1;"></div>
+  <div class="modal-box" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title" id="request-action-title">Confirm action</div>
+      <button class="close-btn" type="button" onclick="closeRequestActionModal()"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-copy" id="request-action-copy"></div>
+      <div class="confirm-summary">
+        <strong id="request-action-hospital">Request</strong>
+        <span id="request-action-meta" style="font-size:12px;color:var(--text-muted);"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" type="button" onclick="closeRequestActionModal()">Cancel</button>
+      <button class="btn btn-primary" type="button" id="request-action-confirm" onclick="confirmRequestAction()">Confirm</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
   let activeTab = 'all';
+  let requestAction = null;
 
   function switchTab(tab, btn) {
     activeTab = tab;
@@ -93,44 +128,77 @@
   }
 
   function renderRequestCard(r) {
-    const isOwner = currentUser && r.patient && r.patient.id === currentUser.id;
+    const isOwner = Boolean(r.canManage || (currentUser && r.patient && r.patient.id === currentUser.id));
     const btLabel = BT_LABEL[r.bloodType] || r.bloodType || '?';
     const btBg = BT_COLOR[r.bloodType] || 'rgba(136,136,136,0.15)';
     const urgColors = {CRITICAL:'var(--crimson)',URGENT:'var(--gold)',NORMAL:'var(--green)'};
     const uc = urgColors[r.urgency] || '#888';
+    const status = r.status || 'OPEN';
 
     return `
-    <div class="req-card ${r.urgency}" id="req-${r.id}">
+    <div class="req-card ${esc(r.urgency)}" id="req-${r.id}">
       <span class="time-badge">${timeAgo(r.createdAt)}</span>
       <div class="req-top">
         <div class="req-blood" style="background:${btBg};color:${uc};">${btLabel}</div>
         <div>
-          <div class="req-title">${r.hospitalName || 'Unknown Hospital'}</div>
-          <div class="req-sub">${r.hospitalAddress || 'No address provided'}</div>
+          <div class="req-title">${esc(r.hospitalName || 'Unknown Hospital')}</div>
+          <div class="req-sub">${esc(r.hospitalAddress || 'No address provided')}</div>
         </div>
-        <span class="blood-badge urgency-${r.urgency}" style="margin-left:auto;">${r.urgency}</span>
+        <span class="blood-badge urgency-${esc(r.urgency)}" style="margin-left:auto;">${esc(r.urgency)}</span>
       </div>
       <div class="req-details">
         <div class="req-detail"><i class="fa fa-droplet"></i>${r.unitsNeeded || 1} unit(s) needed</div>
-        <div class="req-detail"><i class="fa fa-phone"></i>${r.contactPhone || 'No contact'}</div>
-        <div class="req-detail"><i class="fa fa-user"></i>${r.patient?.fullName || 'Anonymous'}</div>
-        <div class="req-detail"><i class="fa fa-circle"></i>${r.status || 'OPEN'}</div>
+        <div class="req-detail"><i class="fa fa-phone"></i>${esc(r.contactPhone || 'No contact')}</div>
+        <div class="req-detail"><i class="fa fa-user"></i>${esc(r.patient?.fullName || 'Anonymous')}</div>
+        <div class="req-detail"><span class="req-status-pill ${esc(status)}"><i class="fa ${statusIcon(status)}"></i>${statusLabel(status)}</span></div>
       </div>
-      ${r.description ? `<div style="font-size:12px;color:var(--text-muted);padding:10px;background:var(--surface-2);border-radius:8px;margin-bottom:14px;">${r.description}</div>` : ''}
+      ${r.description ? `<div style="font-size:12px;color:var(--text-muted);padding:10px;background:var(--surface-2);border-radius:8px;margin-bottom:14px;">${esc(r.description)}</div>` : ''}
       <div class="req-actions">
-        ${isOwner
-          ? `<button class="btn btn-secondary btn-sm" onclick="fulfillReq(${r.id})"><i class="fa fa-check"></i> Mark Fulfilled</button>
-             <button class="btn btn-ghost btn-sm" onclick="cancelReq(${r.id})" style="color:var(--text-muted);">Delete</button>`
-          : r.status === 'OPEN'
-            ? `<button class="btn btn-primary btn-sm" onclick="respondReq(${r.id})"><i class="fa fa-hand-holding-heart"></i> I'll Donate</button>
-               <button class="btn btn-secondary btn-sm" onclick="msgPatient(${r.patient?.id}, '${r.patient?.fullName}')"><i class="fa fa-comment"></i> Message</button>`
-            : `<span style="font-size:12px;color:var(--text-muted);padding:8px;">Already matched</span>`
-        }
+        ${isOwner ? renderOwnerActions(r) : renderDonorActions(r)}
         <button class="btn btn-ghost btn-sm" onclick="openOnMap(${r.latitude},${r.longitude})" title="View on map">
           <i class="fa fa-map"></i>
         </button>
       </div>
     </div>`;
+  }
+
+  function renderOwnerActions(r) {
+    const status = r.status || 'OPEN';
+    if (!['OPEN', 'MATCHED'].includes(status)) {
+      const note = status === 'FULFILLED' ? 'This request is completed and locked.' : 'This request cannot be changed now.';
+      return `<span class="req-action-note"><i class="fa fa-lock"></i> ${note}</span>`;
+    }
+    const summary = encodeURIComponent(JSON.stringify({
+      id: r.id,
+      hospitalName: r.hospitalName || 'Unknown Hospital',
+      bloodType: BT_LABEL[r.bloodType] || r.bloodType || '?',
+      urgency: r.urgency || 'NORMAL',
+      status
+    }));
+    return `
+      <button class="btn btn-primary btn-sm" onclick="openRequestAction('fulfill', '${summary}')">
+        <i class="fa fa-circle-check"></i> Mark Fulfilled
+      </button>
+      <button class="btn btn-danger btn-sm" onclick="openRequestAction('delete', '${summary}')">
+        <i class="fa fa-trash"></i> Delete
+      </button>`;
+  }
+
+  function renderDonorActions(r) {
+    if (r.status === 'OPEN') {
+      const patientName = encodeURIComponent(r.patient?.fullName || '');
+      return `<button class="btn btn-primary btn-sm" onclick="respondReq(${r.id})"><i class="fa fa-hand-holding-heart"></i> I'll Donate</button>
+              <button class="btn btn-secondary btn-sm" onclick="msgPatient(${r.patient?.id || 'null'}, '${patientName}')"><i class="fa fa-comment"></i> Message</button>`;
+    }
+    return `<span class="req-action-note"><i class="fa fa-circle-info"></i> ${statusLabel(r.status)}</span>`;
+  }
+
+  function statusIcon(status) {
+    return { OPEN:'fa-circle-dot', MATCHED:'fa-user-check', FULFILLED:'fa-circle-check', CANCELLED:'fa-ban' }[status] || 'fa-circle';
+  }
+
+  function statusLabel(status) {
+    return { OPEN:'Open', MATCHED:'Matched', FULFILLED:'Fulfilled', CANCELLED:'Cancelled' }[status] || status || 'Open';
   }
 
   async function respondReq(id) {
@@ -143,26 +211,80 @@
 
   async function fulfillReq(id) {
     try {
+      setRequestBusy(id, true);
       const res = await api(`requests/${id}/fulfill`, 'PATCH');
-      toast('✅ Fulfilled!', res.message, 'success');
+      toast('Fulfilled', res.message || 'Request marked fulfilled.', 'success');
       loadRequests();
-    } catch { toast('Error', 'Could not mark as fulfilled', 'error'); }
+      return true;
+    } catch (error) {
+      toast('Could not mark fulfilled', error.message || 'Please try again.', 'error');
+      setRequestBusy(id, false);
+      return false;
+    }
   }
 
   async function cancelReq(id) {
-    if (!confirm('Are you sure you want to delete this request?')) return;
     try {
+      setRequestBusy(id, true);
       await api(`requests/${id}/delete`, 'DELETE');
       toast('Request Deleted', 'Your request has been removed.', 'success');
       loadRequests();
-    } catch {
-      toast('Error', 'Could not delete the request.', 'error');
+      return true;
+    } catch (error) {
+      toast('Could not delete request', error.message || 'Please try again.', 'error');
+      setRequestBusy(id, false);
+      return false;
     }
+  }
+
+  function openRequestAction(type, encodedSummary) {
+    const req = JSON.parse(decodeURIComponent(encodedSummary));
+    requestAction = { type, request: req };
+    const isFulfill = type === 'fulfill';
+    document.getElementById('request-action-title').textContent = isFulfill ? 'Mark request fulfilled?' : 'Delete this request?';
+    document.getElementById('request-action-copy').textContent = isFulfill
+      ? 'Use this after the blood requirement has been handled. The request will be closed and matched donors will be notified.'
+      : 'This removes the request from open lists and maps. This cannot be undone.';
+    document.getElementById('request-action-hospital').textContent = req.hospitalName;
+    document.getElementById('request-action-meta').textContent = `${req.bloodType} - ${statusLabel(req.status)} - ${req.urgency}`;
+    const confirmBtn = document.getElementById('request-action-confirm');
+    confirmBtn.className = isFulfill ? 'btn btn-primary' : 'btn btn-danger';
+    confirmBtn.innerHTML = isFulfill ? '<i class="fa fa-circle-check"></i> Mark Fulfilled' : '<i class="fa fa-trash"></i> Delete Request';
+    openModal('request-action-modal');
+  }
+
+  function closeRequestActionModal() {
+    requestAction = null;
+    closeModal('request-action-modal');
+  }
+
+  async function confirmRequestAction() {
+    if (!requestAction) return;
+    const { type, request } = requestAction;
+    const confirmBtn = document.getElementById('request-action-confirm');
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<div class="spinner" style="width:16px;height:16px;"></div> Working...';
+    try {
+      const ok = type === 'fulfill' ? await fulfillReq(request.id) : await cancelReq(request.id);
+      if (ok) closeRequestActionModal();
+    } finally {
+      confirmBtn.disabled = false;
+      if (requestAction) {
+        confirmBtn.innerHTML = type === 'fulfill' ? '<i class="fa fa-circle-check"></i> Mark Fulfilled' : '<i class="fa fa-trash"></i> Delete Request';
+      }
+    }
+  }
+
+  function setRequestBusy(id, busy) {
+    const card = document.getElementById(`req-${id}`);
+    if (!card) return;
+    card.classList.toggle('is-updating', busy);
+    card.querySelectorAll('button').forEach(btn => { btn.disabled = busy; });
   }
 
   function msgPatient(id, name) {
     if (!id) return toast('Error', 'Cannot message this user', 'error');
-    window.location = `/messages/?to=${id}&name=${encodeURIComponent(name)}`;
+    window.location = `/messages/?to=${id}&name=${encodeURIComponent(decodeURIComponent(name || ''))}`;
   }
 
   function openOnMap(lat, lng) {

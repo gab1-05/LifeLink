@@ -16,9 +16,6 @@
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
   />
 
   <script>
@@ -33,6 +30,8 @@
       --surface:#141414;
       --surface-2:#1E1E1E;
       --border:rgba(220,20,60,0.18);
+      --surface-3:#272727;
+      --soft-border:rgba(255,255,255,0.15);
       --text:#F5F5F5;
       --text-muted:#888;
       --green:#00E676;
@@ -43,6 +42,8 @@
       --surface:#FFFFFF;
       --surface-2:#F0F3F8;
       --border:rgba(150,40,60,0.18);
+      --surface-3:#E4E9F1;
+      --soft-border:rgba(23,32,42,0.12);
       --text:#17202A;
       --text-muted:#647083;
       --green:#008A4E;
@@ -301,7 +302,7 @@
 
     .btn-oauth:hover{
       background:var(--surface);
-      border-color:rgba(255,255,255,0.15);
+      border-color:var(--soft-border);
     }
 
     .error-msg{
@@ -399,8 +400,15 @@
       background:var(--surface);
       color:var(--text);
       cursor:pointer;
-      z-index:2;
+      z-index:100;
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
+
+    .theme-toggle .fa-moon{display:none;}
+    :root[data-theme="light"] .theme-toggle .fa-sun{display:none;}
+    :root[data-theme="light"] .theme-toggle .fa-moon{display:inline-block;}
 
     .location-row{
       display:grid;
@@ -446,7 +454,7 @@
     }
 
     .location-result:last-child{border-bottom:0;}
-    .location-result:hover{background:var(--surface-3,rgba(255,255,255,0.06));}
+    .location-result:hover{background:var(--surface-3);}
 
     .check-row{
       display:flex;
@@ -467,11 +475,16 @@
       .location-row{grid-template-columns:1fr;}
       .location-row .btn-location{width:100%;}
     }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar{width:6px;}
+    ::-webkit-scrollbar-track{background:var(--surface);}
+    ::-webkit-scrollbar-thumb{background:var(--crimson);border-radius:3px;}
   </style>
 </head>
 <body>
-<button class="theme-toggle" type="button" onclick="toggleTheme()" title="Toggle light mode">
-  <i class="fa fa-sun"></i>
+<button class="theme-toggle" type="button" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
+  <i class="fa fa-sun"></i><i class="fa fa-moon"></i>
 </button>
 <div class="bg-orb orb1"></div>
 <div class="bg-orb orb2"></div>

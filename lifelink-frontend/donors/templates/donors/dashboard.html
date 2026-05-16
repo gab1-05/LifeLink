@@ -29,7 +29,7 @@
     content:'';
     position:absolute;
     inset:0;
-    background:linear-gradient(90deg, rgba(220,20,60,0.04), transparent 40%, rgba(255,255,255,0.02));
+    background:linear-gradient(90deg, rgba(220,20,60,0.04), transparent 40%, var(--soft-bg-2));
     pointer-events:none;
   }
 
@@ -238,7 +238,7 @@
   .dashboard-card .card-header{
     padding:20px 24px;
     border-bottom:1px solid var(--border);
-    background:rgba(255,255,255,0.01);
+    background:var(--soft-bg-2);
   }
 
   .dashboard-card .card-title{
@@ -268,7 +268,7 @@
     align-items:center;
     gap:14px;
     padding:16px 0;
-    border-bottom:1px solid rgba(255,255,255,0.05);
+    border-bottom:1px solid var(--soft-border);
     transition:background .2s ease, padding .2s ease, border-color .2s ease;
     cursor:pointer;
     border-radius:12px;
@@ -279,7 +279,7 @@
   }
 
   .request-row:hover{
-    background:rgba(255,255,255,0.02);
+    background:var(--soft-bg-2);
     padding-left:10px;
     padding-right:10px;
     border-color:transparent;
@@ -308,7 +308,7 @@
     align-items:center;
     gap:12px;
     padding:14px 0;
-    border-bottom:1px solid rgba(255,255,255,0.05);
+    border-bottom:1px solid var(--soft-border);
   }
 
   .donor-row:last-child{
@@ -365,9 +365,9 @@
   }
 
   .available-pill.no{
-    background:rgba(255,255,255,0.04);
+    background:var(--soft-bg);
     color:var(--text-muted);
-    border-color:rgba(255,255,255,0.08);
+    border-color:var(--soft-border);
   }
 
   .dot{
@@ -407,7 +407,7 @@
   .activity-tile{
     padding:20px 16px;
     background:var(--surface-2);
-    border:1px solid rgba(255,255,255,0.05);
+    border:1px solid var(--soft-border);
     border-radius:14px;
     text-align:center;
     transition:transform .2s ease, border-color .2s ease;
@@ -794,7 +794,7 @@
         const feed = await api('live-feed');
         const feedEl = document.getElementById('live-feed');
         feedEl.innerHTML = feed.map(item => `
-            <div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--soft-border);">
                 <div style="font-size:20px;">${item.icon}</div>
                 <div style="flex:1;">
                     <div style="font-size:13px; color:var(--text);">${item.text}</div>

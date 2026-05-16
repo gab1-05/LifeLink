@@ -38,6 +38,11 @@
       --surface-2:   #1E1E1E;
       --surface-3:   #272727;
       --border:      rgba(220,20,60,0.18);
+      --soft-border: rgba(255,255,255,0.06);
+      --soft-bg:     rgba(255,255,255,0.04);
+      --soft-bg-2:   rgba(255,255,255,0.02);
+      --panel-bg:    rgba(20,20,20,0.92);
+      --overlay-bg:  rgba(0,0,0,0.7);
       --text:        #F5F5F5;
       --text-muted:  #888;
       --gold:        #FFB700;
@@ -58,6 +63,11 @@
       --surface-2:   #F0F3F8;
       --surface-3:   #E4E9F1;
       --border:      rgba(150,40,60,0.18);
+      --soft-border: rgba(23,32,42,0.10);
+      --soft-bg:     rgba(23,32,42,0.04);
+      --soft-bg-2:   rgba(23,32,42,0.025);
+      --panel-bg:    rgba(255,255,255,0.94);
+      --overlay-bg:  rgba(23,32,42,0.35);
       --text:        #17202A;
       --text-muted:  #647083;
       --green:       #008A4E;
@@ -450,7 +460,7 @@
     /* Overlay */
     .overlay {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      background: var(--overlay-bg); backdrop-filter: blur(4px);
       z-index: 900; display: none;
     }
 
@@ -657,7 +667,7 @@ Show sidebar/topbar on all pages except root, login, and register. [web:491]
           <i class="fa fa-circle-check"></i>
         </button>
 
-        <button class="icon-btn theme-mode-btn" type="button" onclick="toggleThemeMode()" title="Toggle light mode">
+        <button class="icon-btn theme-mode-btn" type="button" onclick="toggleThemeMode()" title="Toggle theme" aria-label="Toggle theme">
           <i class="fa fa-sun"></i><i class="fa fa-moon"></i>
         </button>
       </div>
