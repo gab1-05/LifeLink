@@ -20,7 +20,8 @@ connection = pymysql.connect(
 
 try:
     with connection.cursor() as cursor:
-        cursor.execute(f"DROP DATABASE IF EXISTS {db_name};")
+        
+        cursor.execute(f"DROP DATABASE IF EXISTS {db_name};") 
         cursor.execute(f"CREATE DATABASE {db_name};")
     connection.commit()
     print(f"Database {db_name} recreated successfully.")
