@@ -90,18 +90,131 @@ function initMap() {
 
         donorLayer = L.layerGroup().addTo(map);
         requestLayer = L.layerGroup().addTo(map);
-        hospitalLayer = L.layerGroup().addTo(map);
+        
+        if (typeof L.markerClusterGroup !== 'undefined') {
+            hospitalLayer = L.markerClusterGroup({ disableClusteringAtZoom: 14 }).addTo(map);
+        } else {
+            hospitalLayer = L.layerGroup().addTo(map);
+        }
 
         // User layer added last to always appear on top
         userLayer = L.layerGroup().addTo(map);
 
         // Ensure proper sizing after load
-        setTimeout(() => map.invalidateSize(), 300);
+        setTimeout(() => {
+            map.invalidateSize();
+            // Load hospitals immediately when map is ready
+            loadHospitalsInView();
+        }, 500);
 
         locateUser();
+        
+        map.on('moveend', debounce(loadHospitalsInView, 500));
+        map.on('zoomend', debounce(loadHospitalsInView, 500));
     } catch (e) {
         console.error('Map init error:', e);
         fallbackMode = true;
+    }
+}
+
+function debounce(fn, wait) {
+    let t;
+    return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), wait);
+    };
+}
+
+async function loadHospitalsInView() {
+    if (!map || fallbackMode) return;
+    const bounds = map.getBounds();
+    const south = bounds.getSouth();
+    const west = bounds.getWest();
+    const north = bounds.getNorth();
+    const east = bounds.getEast();
+    
+    console.log(`[HospitalLoader] Fetching hospitals in bounds: S=${south.toFixed(4)} W=${west.toFixed(4)} N=${north.toFixed(4)} E=${east.toFixed(4)}`);
+    
+    try {
+        const url = `/api/hospitals-in-view/?south=${south}&west=${west}&north=${north}&east=${east}`;
+        const response = await fetch(url, { credentials: 'same-origin' });
+        hospitalData = await response.json();
+        console.log(`[HospitalLoader] Got ${Array.isArray(hospitalData) ? hospitalData.length : 'ERROR'} hospitals`, hospitalData);
+        if (Array.isArray(hospitalData)) {
+            renderHospitals();
+        }
+    } catch (e) {
+        console.error('[HospitalLoader] Failed to load viewport hospitals', e);
+    }
+}
+
+function renderHospitals() {
+    if (!map || !hospitalLayer) return;
+    hospitalLayer.clearLayers();
+    hospitalData.forEach(h => {
+        if (!h.latitude || !h.longitude) return;
+        const popupHtml = `
+            <div class="marker-popup hospital-popup">
+                <strong>🏥 ${h.name || 'Hospital'}</strong><br>
+                ${h.address ? `<span>📍 ${h.address}</span><br>` : ''}
+                <div class="popup-buttons">
+                    <button class="popup-btn popup-btn-primary" onclick="requestBloodAtHospital('${(h.name||'').replace(/'/g, "\\'")}', '${(h.address||'').replace(/'/g, "\\'")}', ${h.latitude}, ${h.longitude})">Request Blood Here</button>
+                </div>
+            </div>
+        `;
+        L.marker([parseFloat(h.latitude), parseFloat(h.longitude)], {
+            icon: L.divIcon({html:'<div style="width:30px;height:30px;border-radius:10px;background:#2979FF;color:#fff;display:flex;align-items:center;justify-content:center;">🏥</div>',iconSize:[30,30],iconAnchor:[15,15]})
+        }).bindPopup(popupHtml).addTo(hospitalLayer);
+    });
+}
+
+function requestBloodAtHospital(name, address, lat, lng) {
+    window.location.href = `/dashboard/?request_modal=1&hosp_name=${encodeURIComponent(name)}&hosp_addr=${encodeURIComponent(address)}&lat=${lat}&lng=${lng}`;
+}
+
+function toggleLayer(layerName, element) {
+    let targetLayer;
+    if (layerName === 'donor') targetLayer = donorLayer;
+    else if (layerName === 'request') targetLayer = requestLayer;
+    else if (layerName === 'hospital') targetLayer = hospitalLayer;
+
+    if (!targetLayer || !map) return;
+    
+    const isDonorVisible = map.hasLayer(donorLayer);
+    const isRequestVisible = map.hasLayer(requestLayer);
+    const isHospitalVisible = map.hasLayer(hospitalLayer);
+    
+    // Check if only the target layer is currently visible
+    const onlyTargetVisible = map.hasLayer(targetLayer) && 
+        ((targetLayer === donorLayer) ? (!isRequestVisible && !isHospitalVisible) : 
+         (targetLayer === requestLayer) ? (!isDonorVisible && !isHospitalVisible) : 
+         (!isDonorVisible && !isRequestVisible));
+         
+    // Reset all interactive legend items to 0.5 opacity
+    document.querySelectorAll('.map-legend .legend-item').forEach(el => {
+        if (el.getAttribute('onclick')) el.style.opacity = '0.5';
+    });
+
+    if (onlyTargetVisible) {
+        // Restore all layers if clicked again
+        map.addLayer(donorLayer);
+        map.addLayer(requestLayer);
+        map.addLayer(hospitalLayer);
+        document.querySelectorAll('.map-legend .legend-item').forEach(el => {
+            if (el.getAttribute('onclick')) el.style.opacity = '1';
+        });
+    } else {
+        // Show only the target layer
+        if (map.hasLayer(donorLayer)) map.removeLayer(donorLayer);
+        if (map.hasLayer(requestLayer)) map.removeLayer(requestLayer);
+        if (map.hasLayer(hospitalLayer)) map.removeLayer(hospitalLayer);
+        
+        map.addLayer(targetLayer);
+        
+        // Highlight just the associated legend items
+        document.querySelectorAll(`.map-legend .legend-item[onclick*='${layerName}']`).forEach(el => {
+            el.style.opacity = '1';
+        });
     }
 }
 
@@ -192,17 +305,19 @@ function loadData() {
 
     Promise.allSettled([
         (currentFilter === 'all' || currentFilter === 'donors') ? api('users/donors' + q) : Promise.resolve([]),
-        (currentFilter === 'all' || currentFilter === 'requests') ? api('requests' + q) : Promise.resolve([]),
-        (currentFilter === 'all' || currentFilter === 'hospitals') ? api('hospitals') : Promise.resolve([])
+        (currentFilter === 'all' || currentFilter === 'requests') ? api('requests' + q) : Promise.resolve([])
     ]).then(results => {
         donorData = results[0].status === 'fulfilled' ? results[0].value : [];
         requestData = results[1].status === 'fulfilled' ? results[1].value : [];
-        hospitalData = results[2].status === 'fulfilled' ? results[2].value : [];
 
         if (map && !fallbackMode) {
             renderLeafletData();
         }
     });
+
+    if (currentFilter === 'all' || currentFilter === 'hospitals') {
+        loadHospitalsInView();
+    }
 }
 
 function renderLeafletData() {
@@ -210,7 +325,6 @@ function renderLeafletData() {
 
     donorLayer.clearLayers();
     requestLayer.clearLayers();
-    hospitalLayer.clearLayers();
 
     donorData.forEach(d => {
         if (!d.latitude || !d.longitude) return;
@@ -256,23 +370,6 @@ function renderLeafletData() {
         .addTo(requestLayer);
     });
 
-    hospitalData.forEach(h => {
-        if (!h.latitude || !h.longitude) return;
-
-        const lat = parseFloat(h.latitude);
-        const lng = parseFloat(h.longitude);
-        if (Number.isNaN(lat) || Number.isNaN(lng)) return;
-
-        L.marker([lat, lng], {
-            icon: L.divIcon({
-                html: '<div style="width:30px;height:30px;border-radius:10px;background:#2979FF;color:#fff;display:flex;align-items:center;justify-content:center;">🏥</div>',
-                iconSize: [30, 30],
-                iconAnchor: [15, 15]
-            })
-        })
-        .bindPopup(createHospitalPopup(h), { maxWidth: 300, maxHeight: 400 })
-        .addTo(hospitalLayer);
-    });
 }
 
 function setFilter(f, btn) {

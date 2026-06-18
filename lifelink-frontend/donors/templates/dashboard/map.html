@@ -5,6 +5,8 @@
 {% block extra_head %}
 {% load static %}
 <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 
 <style>
   html, body {
@@ -306,16 +308,17 @@
 </div>
 
 <div class="map-legend">
-  <div class="legend-item"><div class="legend-dot" style="background:#DC143C;box-shadow:0 0 6px #DC143C;"></div>Available Donor</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#888;"></div>Unavailable</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#FFB700;box-shadow:0 0 6px #FFB700;"></div>Urgent Request</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#FF3358;box-shadow:0 0 10px #FF3358;"></div>Critical Request</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#00E676;"></div>Normal Request</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#2979FF;border-radius:4px;"></div>Hospital</div>
+  <div class="legend-item" onclick="toggleLayer('donor', this)" style="cursor:pointer;"><div class="legend-dot" style="background:#DC143C;box-shadow:0 0 6px #DC143C;"></div>Available Donor</div>
+  <div class="legend-item" style="opacity:0.5;"><div class="legend-dot" style="background:#888;"></div>Unavailable</div>
+  <div class="legend-item" onclick="toggleLayer('request', this)" style="cursor:pointer;"><div class="legend-dot" style="background:#FFB700;box-shadow:0 0 6px #FFB700;"></div>Urgent Request</div>
+  <div class="legend-item" onclick="toggleLayer('request', this)" style="cursor:pointer;"><div class="legend-dot" style="background:#FF3358;box-shadow:0 0 10px #FF3358;"></div>Critical Request</div>
+  <div class="legend-item" onclick="toggleLayer('request', this)" style="cursor:pointer;"><div class="legend-dot" style="background:#00E676;"></div>Normal Request</div>
+  <div class="legend-item" onclick="toggleLayer('hospital', this)" style="cursor:pointer;"><div class="legend-dot" style="background:#2979FF;border-radius:4px;"></div>Hospital</div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
-<script src="{% static 'js/map.js' %}?v=3.4"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<script src="{% static 'js/map.js' %}?v=3.5"></script>
 {% endblock %}

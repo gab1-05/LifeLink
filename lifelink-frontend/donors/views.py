@@ -16,7 +16,8 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.db.models import Q
 from django.views.decorators.csrf import csrf_protect, csrf_exempt, ensure_csrf_cookie
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_GET
+import requests
 from django.core.mail import send_mail
 from django.core.mail import get_connection, EmailMessage
 from django.conf import settings
@@ -993,3 +994,82 @@ def api_rate_user(request, user_id):
         "rating": donor_rating(donor),
         "ratingCount": donor.rating_count,
     })
+
+@login_required
+@require_GET
+def api_nearby_hospitals(request):
+    lat = request.GET.get('lat')
+    lng = request.GET.get('lng')
+    if not lat or not lng:
+        return JsonResponse({"error": "lat and lng required"}, status=400)
+    
+    overpass_url = "http://overpass-api.de/api/interpreter"
+    overpass_query = f"""
+    [out:json];
+    node["amenity"="hospital"](around:5000,{lat},{lng});
+    out;
+    """
+    try:
+        response = requests.get(overpass_url, params={'data': overpass_query}, timeout=10)
+        data = response.json()
+        hospitals = []
+        for element in data.get('elements', []):
+            tags = element.get('tags', {})
+            name = tags.get('name')
+            if not name:
+                continue
+            
+            address_parts = [tags.get('addr:street', ''), tags.get('addr:city', '')]
+            address = " ".join([p for p in address_parts if p]).strip()
+            
+            hospitals.append({
+                "id": element.get('id'),
+                "name": name,
+                "address": address or "Unknown Address",
+                "latitude": element.get('lat'),
+                "longitude": element.get('lon'),
+            })
+        return JsonResponse(hospitals, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+@login_required
+@require_GET
+def api_hospitals_in_view(request):
+    south = request.GET.get('south')
+    west = request.GET.get('west')
+    north = request.GET.get('north')
+    east = request.GET.get('east')
+    
+    if not all([south, west, north, east]):
+        return JsonResponse({"error": "south, west, north, and east required"}, status=400)
+    
+    overpass_url = "http://overpass-api.de/api/interpreter"
+    overpass_query = f"""
+    [out:json];
+    node["amenity"="hospital"]({south},{west},{north},{east});
+    out;
+    """
+    try:
+        response = requests.get(overpass_url, params={'data': overpass_query}, timeout=10)
+        data = response.json()
+        hospitals = []
+        for element in data.get('elements', []):
+            tags = element.get('tags', {})
+            name = tags.get('name')
+            if not name:
+                continue
+            
+            address_parts = [tags.get('addr:street', ''), tags.get('addr:city', '')]
+            address = " ".join([p for p in address_parts if p]).strip()
+            
+            hospitals.append({
+                "id": element.get('id'),
+                "name": name,
+                "address": address or "Unknown Address",
+                "latitude": element.get('lat'),
+                "longitude": element.get('lon'),
+            })
+        return JsonResponse(hospitals, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
