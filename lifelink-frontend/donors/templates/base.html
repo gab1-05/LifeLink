@@ -22,6 +22,7 @@
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
   />
+  <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
 
   <script>
     document.documentElement.dataset.theme = localStorage.getItem('lifelink-theme') || 'dark';
@@ -750,7 +751,12 @@ Show sidebar/topbar on all pages except root, login, and register. [web:491]
         </div>
         <div class="input-group" style="margin-bottom:16px;">
           <label class="input-label" for="req-hospital">Hospital Name *</label>
-          <input type="text" class="input" id="req-hospital" required placeholder="e.g. City General Hospital" />
+          <div style="display:flex;gap:8px;">
+            <input type="text" class="input" id="req-hospital" required placeholder="e.g. City General Hospital" style="flex:1;" />
+            <button type="button" class="btn btn-secondary" onclick="openHospitalMap()" title="Select from Map">
+              <i class="fa fa-map-location-dot"></i>
+            </button>
+          </div>
         </div>
         <div class="input-group" style="margin-bottom:16px;">
           <label class="input-label" for="req-address">Hospital Address</label>
@@ -787,6 +793,21 @@ Show sidebar/topbar on all pages except root, login, and register. [web:491]
   </div>
 </div>
 
+<!-- Hospital Map Modal -->
+<div class="modal" id="hosp-map-modal" style="z-index: 2500;">
+  <div class="overlay" onclick="closeModal('hosp-map-modal')" style="position:fixed;inset:0;z-index:-1;"></div>
+  <div class="modal-box" style="max-width: 800px; width: 95%;">
+    <div class="modal-header">
+      <span class="modal-title">🏥 Select Hospital</span>
+      <button class="close-btn" type="button" onclick="closeModal('hosp-map-modal')"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div class="modal-body" style="padding: 0;">
+      <div id="hospital-picker-map" style="height: 400px; width: 100%;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
 <script>
   const TOKEN = '{{ request.session.jwt_token|default:"" }}';
   let currentUser = null;
@@ -795,8 +816,10 @@ Show sidebar/topbar on all pages except root, login, and register. [web:491]
   let notifOpen = false;
 
   try {
-    const raw = {{ user|default:"null"|safe }};
-    if (raw) currentUser = raw;
+    const rawStr = '{{ user|escapejs }}';
+    if (rawStr && rawStr !== 'null') {
+      currentUser = JSON.parse(rawStr);
+    }
   } catch (e) {}
 
   function byId(id) { return document.getElementById(id); }
@@ -982,6 +1005,31 @@ Show sidebar/topbar on all pages except root, login, and register. [web:491]
       latitude:        currentLat,
       longitude:       currentLng
     };
+
+    const phoneVal = body.contactPhone.trim();
+    if (phoneVal && !/^\d{10}$/.test(phoneVal)) {
+      toast('Validation Error', 'invalid digits', 'warning');
+      return;
+    }
+
+    const hospVal = body.hospitalName.trim();
+    if (!hospVal || hospVal.length < 3 || !/[a-zA-Z]{2,}/.test(hospVal)) {
+      toast('Validation Error', 'Invalid hospital name', 'warning');
+      return;
+    }
+
+    const addrVal = body.hospitalAddress.trim();
+    if (addrVal && (addrVal.length < 4 || !/[a-zA-Z]{2,}/.test(addrVal))) {
+      toast('Validation Error', 'Invalid hospital address', 'warning');
+      return;
+    }
+
+    const locVal = get('req-location-search').trim();
+    if (locVal && (locVal.length < 4 || !/[a-zA-Z]{2,}/.test(locVal))) {
+      toast('Validation Error', 'Invalid location', 'warning');
+      return;
+    }
+
     if (!body.bloodType || !body.hospitalName) {
       toast('Missing fields', 'Blood type and hospital name are required.', 'warning');
       return;
@@ -1204,6 +1252,93 @@ Show sidebar/topbar on all pages except root, login, and register. [web:491]
       O_POSITIVE:'O+', O_NEGATIVE:'O-'
     };
     return m[bt] || bt || '?';
+  }
+
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  let hospMapObj = null;
+  let hospMarkers = [];
+
+  async function openHospitalMap() {
+    openModal('hosp-map-modal');
+    if (typeof L === 'undefined') {
+      toast('Error', 'Map library not loaded', 'error');
+      return;
+    }
+    
+    if (!currentLat || !currentLng) {
+      if (navigator.geolocation) {
+        toast('Location', 'Finding your location...', 'info');
+        try {
+          const pos = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {timeout: 8000});
+          });
+          currentLat = pos.coords.latitude;
+          currentLng = pos.coords.longitude;
+        } catch (err) {
+          toast('Location', 'Could not get location automatically.', 'warning');
+        }
+      }
+    }
+
+    let centerLat = currentLat || (currentUser && currentUser.latitude) || 19.0760;
+    let centerLng = currentLng || (currentUser && currentUser.longitude) || 72.8777;
+
+    if (!hospMapObj) {
+      hospMapObj = L.map('hospital-picker-map').setView([centerLat, centerLng], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(hospMapObj);
+    } else {
+      hospMapObj.setView([centerLat, centerLng], 12);
+      setTimeout(() => hospMapObj.invalidateSize(), 100);
+    }
+
+    // User marker
+    L.circleMarker([centerLat, centerLng], {
+      radius: 6, color: '#fff', weight: 2, fillColor: '#DC143C', fillOpacity: 1
+    }).addTo(hospMapObj).bindTooltip('Your Location');
+
+    try {
+      toast('Fetching', 'Loading nearby hospitals...', 'info');
+      const hospitals = await api(`nearby-hospitals/?lat=${centerLat}&lng=${centerLng}`);
+      hospMarkers.forEach(m => m.remove());
+      hospMarkers = [];
+
+      hospitals.forEach(h => {
+        if (h.latitude && h.longitude) {
+          const dist = getDistance(centerLat, centerLng, h.latitude, h.longitude).toFixed(1);
+          const marker = L.circleMarker([h.latitude, h.longitude], {
+            radius: 8, color: '#fff', weight: 2, fillColor: '#2979FF', fillOpacity: 1
+          }).addTo(hospMapObj);
+          
+          marker.bindTooltip(`<b>${esc(h.name)}</b><br/>${esc(h.address)}<br/><small>${dist} km away</small>`);
+          marker.on('click', () => {
+            byId('req-hospital').value = h.name;
+            if (byId('req-address')) {
+              byId('req-address').value = h.address;
+            }
+            setRequestLocation(h.latitude, h.longitude, 'Selected Hospital');
+            closeModal('hosp-map-modal');
+            toast('Hospital Selected', h.name, 'success');
+          });
+          hospMarkers.push(marker);
+        }
+      });
+      setTimeout(() => hospMapObj.invalidateSize(), 300);
+    } catch (e) {
+      console.error('Failed to load hospitals', e);
+      toast('Error', 'Failed to load nearby hospitals', 'error');
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {

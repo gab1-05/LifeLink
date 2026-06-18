@@ -15,4 +15,6 @@ celery==5.3.4
 python-dotenv==1.0.0
 PyJWT==2.12.1
 cryptography==41.0.7
-
+pymysql
+social-auth-app-django
+whitenoise
