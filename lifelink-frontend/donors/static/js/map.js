@@ -3,6 +3,7 @@ console.log('map.js loading...');
 let map, donorLayer, requestLayer, hospitalLayer, userLayer, currentFilter = 'all';
 let donorData = [], requestData = [], hospitalData = [];
 let myMarker = null, myRadiusCircle = null;
+let currentLat = null, currentLng = null;
 let fallbackMode = false;
 
 const DEFAULT_CENTER = [19.0760, 72.8777];
@@ -449,37 +450,7 @@ function initiateDonation(donorId, donorName) {
     openChatWith(donorId, donorName);
 }
 
-function createRequestPopup(request) {
-    const btLabel = BT_LABEL[request.bloodType] || 'Unknown';
-    const urgencyEmoji = request.urgency === 'CRITICAL' ? '🚨' : request.urgency === 'URGENT' ? '⚠️' : '✅';
-    const googleMapsBtn = '<button class="popup-btn popup-btn-map" onclick="openInGoogleMaps(' + request.latitude + ', ' + request.longitude + ', \'' + (request.patientName || 'Request').replace(/'/g, "\\'") + '\')">📍 Google Maps</button>';
-    const respondBtn = '<button class="popup-btn popup-btn-respond" onclick="respondToRequest(' + request.id + ')">🩹 Respond</button>';
-    const messageBtn = '<button class="popup-btn popup-btn-message" onclick="openChatWith(' + request.userId + ', \'' + (request.requesterName || 'Requester').replace(/'/g, "\\'") + '\')">💬 Contact</button>';
-    
-    return '<div class="marker-popup request-popup">' +
-        '<strong>' + urgencyEmoji + ' ' + (request.patientName || 'Request') + '</strong><br>' +
-        '<span class="urgency-' + request.urgency.toLowerCase() + '">Status: ' + request.urgency + '</span><br>' +
-        '<span class="blood-type">🩸 Blood Type: ' + btLabel + '</span><br>' +
-        '<span>Requested: ' + (request.unitsNeeded || '1') + ' units</span><br>' +
-        (request.hospital ? '<span>🏥 ' + request.hospital + '</span><br>' : '') +
-        '<div class="popup-buttons">' +
-        googleMapsBtn + respondBtn + messageBtn +
-        '</div></div>';
-}
 
-function createHospitalPopup(hospital) {
-    const googleMapsBtn = '<button class="popup-btn popup-btn-map" onclick="openInGoogleMaps(' + hospital.latitude + ', ' + hospital.longitude + ', \'' + (hospital.hospitalName || 'Hospital').replace(/'/g, "\\'") + '\')">📍 Google Maps</button>';
-    const messageBtn = '<button class="popup-btn popup-btn-message" onclick="openChatWith(' + hospital.id + ', \'' + (hospital.hospitalName || 'Hospital').replace(/'/g, "\\'") + '\')">💬 Message Hospital</button>';
-    
-    return '<div class="marker-popup hospital-popup">' +
-        '<strong>🏥 ' + (hospital.hospitalName || 'Hospital') + '</strong><br>' +
-        (hospital.address ? '<span>📍 ' + hospital.address + '</span><br>' : '') +
-        (hospital.phone ? '<span>📱 ' + hospital.phone + '</span><br>' : '') +
-        (hospital.email ? '<span>📧 ' + hospital.email + '</span><br>' : '') +
-        '<div class="popup-buttons">' +
-        googleMapsBtn + messageBtn +
-        '</div></div>';
-}
 
 function createRequestPopup(request) {
     const btLabel = BT_LABEL[request.bloodType] || 'Unknown';
