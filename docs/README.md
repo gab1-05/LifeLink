@@ -1,10 +1,10 @@
-# 🩸 LifeLink
+# LifeLink
 
 **LifeLink** is a web platform that connects blood donors with hospitals and patients in real time. It streamlines urgent blood requests, intelligently matches donors by blood type and proximity, and keeps all parties informed through live notifications and in-app messaging.
 
 ---
 
-## ✨ Features
+## Features
 
 | Category | Details |
 |---|---|
@@ -21,7 +21,7 @@
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 - **Python 3** / **Django 4.2** — Web framework & ORM
@@ -44,7 +44,7 @@
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -55,7 +55,7 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/LifeLink.git
+git clone https://github.com/gab1-05/LifeLink.git
 cd LifeLink/lifelink-frontend
 ```
 
@@ -130,7 +130,7 @@ Open **http://127.0.0.1:8000** in your browser.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 lifelink-frontend/
@@ -156,7 +156,7 @@ lifelink-frontend/
 
 ---
 
-## 🔑 Key URL Routes
+## Key URL Routes
 
 | Path | Description |
 |---|---|
@@ -174,7 +174,7 @@ lifelink-frontend/
 
 ---
 
-## 🌐 Environment & Deployment Notes
+## Environment & Deployment Notes
 
 - **Static files**: served via WhiteNoise in production; run `collectstatic` before deploying.
 - **Database**: configure `DB_ENGINE=mysql` and supply credentials via `.env` for production.
@@ -184,7 +184,7 @@ lifelink-frontend/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-feature`)
@@ -194,6 +194,6 @@ lifelink-frontend/
 
 ---
 
-## 📄 License
+## License
 
 This project is released under the [MIT License](LICENSE).
